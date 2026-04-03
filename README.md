@@ -31,7 +31,7 @@
 
 Скачайте и установите [XAMPP](https://www.apachefriends.org/):
 - При установке выберите компоненты: **Apache**, **MySQL**, **PHP**
-- Типичный путь установки: `C:\xampp` или `E:\PROGRAMS\XAMPP`
+- Типичный путь установки: `C:\xampp`
 
 ### 2. Запустить Apache и MySQL
 
@@ -47,11 +47,18 @@
 C:\xampp\htdocs\local_secrets\
 ```
 
+Или клонируйте репозиторий прямо в htdocs:
+
+```bash
+cd C:\xampp\htdocs
+git clone https://github.com/alalapp/local-secrets.git local_secrets
+```
+
 Или создайте junction-ссылку (если проект лежит в другом месте):
 
 ```powershell
 # PowerShell (от администратора)
-New-Item -ItemType Junction -Path "C:\xampp\htdocs\local_secrets" -Target "E:\PROJECTS\local_secrets"
+New-Item -ItemType Junction -Path "C:\xampp\htdocs\local_secrets" -Target "C:\path\to\local_secrets"
 ```
 
 ### 4. Запустить установщик
@@ -77,7 +84,7 @@ http://localhost/local_secrets/install/
 Для безопасности удалите папку `install/` после установки:
 
 ```
-rm -rf C:\xampp\htdocs\local_secrets\install
+rmdir /s /q C:\xampp\htdocs\local_secrets\install
 ```
 
 ---
