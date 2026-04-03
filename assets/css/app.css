@@ -1,0 +1,251 @@
+/* Local Secrets Manager — Стили (двухтемная поддержка) */
+
+/* Sidebar */
+.sidebar {
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    border-right: 1px solid var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .sidebar { background: var(--bs-dark); }
+[data-bs-theme="light"] .sidebar { background: #f8f9fa; }
+
+.sidebar .nav-link {
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+[data-bs-theme="dark"] .sidebar .nav-link { color: var(--bs-gray-400); }
+[data-bs-theme="light"] .sidebar .nav-link { color: var(--bs-gray-700); }
+
+[data-bs-theme="dark"] .sidebar .nav-link:hover {
+    color: var(--bs-white);
+    background: rgba(255, 255, 255, 0.05);
+}
+[data-bs-theme="light"] .sidebar .nav-link:hover {
+    color: var(--bs-dark);
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.sidebar .nav-link.active {
+    color: var(--bs-info);
+    background: rgba(79, 195, 247, 0.1);
+    border-left: 3px solid var(--bs-info);
+}
+
+.sidebar .badge {
+    font-size: 0.7rem;
+}
+
+.sidebar-heading {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Navbar — всегда тёмная */
+.navbar {
+    background-color: var(--bs-dark) !important;
+}
+
+/* Таблицы — усиленный hover */
+.table-hover tbody tr {
+    transition: background 0.15s;
+}
+
+[data-bs-theme="dark"] .table-hover tbody tr:hover { background: rgba(255, 255, 255, 0.06); }
+[data-bs-theme="light"] .table-hover tbody tr:hover { background: rgba(13, 110, 253, 0.04); }
+
+/* Поля секрета */
+.field-cell {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.9rem;
+}
+
+.field-masked {
+    color: var(--bs-secondary);
+    letter-spacing: 2px;
+}
+
+.field-value {
+    color: var(--bs-success);
+}
+
+/* Карточки */
+.card {
+    border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .card-header { background: rgba(255, 255, 255, 0.03); }
+[data-bs-theme="light"] .card-header { background: rgba(0, 0, 0, 0.03); }
+
+.card-header {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Интерактивность — плавные переходы */
+a, button, .btn {
+    transition: all 0.15s ease-in-out;
+}
+
+/* Доступность — фокус для клавиатуры */
+a:focus-visible, button:focus-visible, .btn:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--bs-info);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+/* Кнопки — лёгкий подъём при наведении */
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Кнопки действий */
+.btn-sm {
+    font-size: 0.8rem;
+}
+
+/* Кнопки действий в таблице — без подъёма (тесно) */
+td .btn:hover {
+    transform: none;
+}
+
+/* Форма — строка поля */
+.field-row {
+    transition: background 0.2s;
+    padding: 2px 0;
+    border-radius: 4px;
+}
+
+[data-bs-theme="dark"] .field-row:hover { background: rgba(255, 255, 255, 0.03); }
+[data-bs-theme="light"] .field-row:hover { background: rgba(0, 0, 0, 0.02); }
+
+/* Поиск в хедере */
+#searchResults {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1050;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background: var(--bs-dark);
+}
+
+#searchResults .dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: var(--bs-light);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+#searchResults .dropdown-item:hover {
+    background: rgba(79, 195, 247, 0.1);
+}
+
+#searchResults .dropdown-item:last-child {
+    border-bottom: none;
+}
+
+/* Кнопка темы */
+.theme-toggle {
+    color: #ffc107;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: transparent;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+    background: rgba(255,255,255,0.1);
+    color: #ffd54f;
+}
+
+/* Toast */
+.toast {
+    border: 1px solid var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .toast { background: var(--bs-dark); color: var(--bs-light); }
+[data-bs-theme="light"] .toast { background: var(--bs-white); color: var(--bs-dark); }
+
+/* PIN input */
+.pin-input::-webkit-outer-spin-button,
+.pin-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Анимация копирования */
+@keyframes copied {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); color: var(--bs-success); }
+    100% { transform: scale(1); }
+}
+
+.copied-animation {
+    animation: copied 0.3s ease;
+}
+
+/* Smart add preview */
+#entriesPreview .border {
+    border-color: var(--bs-border-color) !important;
+}
+
+[data-bs-theme="dark"] #entriesPreview .border { background: rgba(255, 255, 255, 0.02); }
+[data-bs-theme="light"] #entriesPreview .border { background: rgba(0, 0, 0, 0.01); }
+
+#entriesPreview .table {
+    margin-bottom: 0;
+}
+
+/* Заголовок страницы — бейдж-счётчик */
+h4 > .badge {
+    font-weight: 500;
+    opacity: 0.75;
+    vertical-align: middle;
+}
+
+/* Пустое состояние — акцентная кнопка */
+.text-center .btn-outline-success {
+    border-width: 2px;
+    font-weight: 600;
+    padding: 0.5rem 1.5rem;
+}
+
+.text-center .btn-outline-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+}
+
+/* Пагинация */
+[data-bs-theme="light"] .page-link {
+    color: var(--bs-dark);
+}
+
+.page-item.active .page-link {
+    color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        position: static;
+        height: auto;
+    }
+}

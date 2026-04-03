@@ -1,0 +1,21 @@
+# Конфигурация с секретами
+config.php
+
+# Логи
+logs/
+*.log
+
+# Кэш
+cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS
+desktop.ini
