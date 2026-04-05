@@ -1,5 +1,11 @@
 # Local Secrets Manager
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PHP](https://img.shields.io/badge/PHP-8.0%2B-blue.svg)](https://www.php.net/)
+[![GitHub stars](https://img.shields.io/github/stars/alalapp/local-secrets?style=social)](https://github.com/alalapp/local-secrets/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/alalapp/local-secrets)](https://github.com/alalapp/local-secrets/commits/main)
+[![GitHub issues](https://img.shields.io/github/issues/alalapp/local-secrets)](https://github.com/alalapp/local-secrets/issues)
+
 Локальное веб-приложение для хранения паролей, API-ключей, токенов и других учётных данных с AES-256 шифрованием.
 
 ## Возможности
