@@ -46,6 +46,29 @@ class TagService {
     }
 
     /**
+     * Получить теги по категории
+     */
+    public function getByCategory(?int $categoryId = null): array {
+        if ($categoryId === null) {
+            // Все теги без фильтра по категории
+            return $this->db->fetchAll("
+                SELECT DISTINCT t.* FROM tags t
+                JOIN secret_tags st ON st.tag_id = t.id
+                ORDER BY t.name
+            ");
+        }
+
+        // Теги для конкретной категории
+        return $this->db->fetchAll("
+            SELECT DISTINCT t.* FROM tags t
+            JOIN secret_tags st ON st.tag_id = t.id
+            JOIN secrets s ON s.id = st.secret_id
+            WHERE s.category_id = ?
+            ORDER BY t.name
+        ", [$categoryId]);
+    }
+
+    /**
      * Удалить неиспользуемые теги
      */
     public function cleanup(): int {

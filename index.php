@@ -7,6 +7,7 @@ Auth::requireAuth();
 
 $categoryService = new CategoryService();
 $secretService = new SecretService();
+$tagService = new TagService();
 
 $categories = $categoryService->getAll();
 $stats = $secretService->getStats();
@@ -15,10 +16,14 @@ $stats = $secretService->getStats();
 $categoryId = isset($_GET['cat']) ? (int)$_GET['cat'] : null;
 $search = isset($_GET['q']) ? trim($_GET['q']) : null;
 $favoritesOnly = !empty($_GET['fav']);
+$tagId = isset($_GET['tag']) ? (int)$_GET['tag'] : null;
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = PER_PAGE;
 
-$result = $secretService->getAll($categoryId, $search, $favoritesOnly, $page, $perPage);
+// Получить доступные теги для текущей категории
+$availableTags = $tagService->getByCategory($categoryId);
+
+$result = $secretService->getAll($categoryId, $search, $favoritesOnly, $tagId, $page, $perPage);
 $secrets = $result['items'];
 $totalPages = $result['totalPages'];
 $totalSecrets = $result['total'];
@@ -61,7 +66,7 @@ ob_start();
         <span class="badge bg-secondary fs-6 ms-2"><?= $totalSecrets ?></span>
     </h4>
     <div>
-        <a href="/local_secrets/pages/smart_add.php" class="btn btn-info btn-sm me-1">
+        <a href="/local_secrets/pages/smart_add.php" class="btn btn-info btn-sm me-1 text-white">
             <i class="fas fa-robot me-1"></i> Умное добавление
         </a>
         <a href="/local_secrets/pages/secret_form.php" class="btn btn-success btn-sm">
@@ -69,6 +74,45 @@ ob_start();
         </a>
     </div>
 </div>
+
+<?php if (!empty($availableTags)): ?>
+    <div class="mb-3">
+        <!-- Кнопка очистки фильтра тегов -->
+        <?php if ($tagId): ?>
+            <div class="mb-3">
+                <a href="<?php
+                    $clearParams = [];
+                    if ($categoryId) $clearParams['cat'] = $categoryId;
+                    if ($favoritesOnly) $clearParams['fav'] = 1;
+                    if ($search) $clearParams['q'] = $search;
+                    echo '/local_secrets/index.php?' . http_build_query($clearParams);
+                ?>" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-times me-1"></i> Очистить фильтр по тегам
+                </a>
+            </div>
+        <?php endif; ?>
+
+        <!-- Теги -->
+        <div class="d-flex flex-wrap gap-2">
+            <?php foreach ($availableTags as $tag): ?>
+                <?php
+                    $isActive = $tagId === (int)$tag['id'];
+                    $params = [];
+                    if ($categoryId) $params['cat'] = $categoryId;
+                    if ($favoritesOnly) $params['fav'] = 1;
+                    if ($search) $params['q'] = $search;
+                    $params['tag'] = $tag['id'];
+                    $tagUrl = '/local_secrets/index.php?' . http_build_query($params);
+                ?>
+                <a href="<?= htmlspecialchars($tagUrl) ?>"
+                   class="badge <?= $isActive ? 'bg-primary' : 'bg-light text-dark border' ?> text-decoration-none"
+                   title="Фильтр по тегу: <?= htmlspecialchars($tag['name']) ?>">
+                    <?= htmlspecialchars($tag['name']) ?>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php endif; ?>
 
 <?php if (empty($secrets)): ?>
     <div class="text-center text-muted py-5">
@@ -106,7 +150,7 @@ ob_start();
                         </td>
                         <td>
                             <a href="/local_secrets/pages/secret_view.php?id=<?= $secret['id'] ?>"
-                               class="text-decoration-none">
+                               class="text-decoration-none" style="font-size: 0.95rem;">
                                 <?= htmlspecialchars($secret['service_name']) ?>
                             </a>
                         </td>
@@ -159,6 +203,7 @@ ob_start();
                 if ($categoryId) $queryParams['cat'] = $categoryId;
                 if ($favoritesOnly) $queryParams['fav'] = 1;
                 if ($search) $queryParams['q'] = $search;
+                if ($tagId) $queryParams['tag'] = $tagId;
 
                 $buildUrl = function(int $p) use ($queryParams): string {
                     $queryParams['page'] = $p;

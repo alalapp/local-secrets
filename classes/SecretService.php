@@ -13,7 +13,7 @@ class SecretService {
      * Получить секреты с пагинацией
      * @return array{items: array, total: int, page: int, perPage: int, totalPages: int}
      */
-    public function getAll(?int $categoryId = null, ?string $search = null, bool $favoritesOnly = false, int $page = 1, int $perPage = 0): array {
+    public function getAll(?int $categoryId = null, ?string $search = null, bool $favoritesOnly = false, ?int $tagId = null, int $page = 1, int $perPage = 0): array {
         if ($perPage <= 0) $perPage = PER_PAGE;
         $where = [];
         $params = [];
@@ -24,6 +24,10 @@ class SecretService {
         }
         if ($favoritesOnly) {
             $where[] = "s.is_favorite = 1";
+        }
+        if ($tagId) {
+            $where[] = "s.id IN (SELECT st3.secret_id FROM secret_tags st3 WHERE st3.tag_id = ?)";
+            $params[] = $tagId;
         }
         if ($search) {
             $where[] = "(MATCH(s.service_name) AGAINST(? IN BOOLEAN MODE) OR s.service_name LIKE ? OR s.id IN (SELECT st2.secret_id FROM secret_tags st2 JOIN tags t2 ON t2.id = st2.tag_id WHERE t2.name LIKE ?))";

@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 
             <div class="mb-3">
-                <input type="password" name="pin" class="form-control pin-input"
+                <input type="password" name="pin" id="pinInput" class="form-control pin-input"
                        inputmode="numeric" pattern="[0-9]*"
                        minlength="<?= PIN_MIN_LENGTH ?>" maxlength="<?= PIN_MAX_LENGTH ?>"
                        placeholder="<?= str_repeat('*', PIN_MIN_LENGTH) ?>"
@@ -148,5 +148,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             </button>
         </form>
     </div>
+
+    <?php if (!$isSetup): ?>
+    <script>
+    (function () {
+        const input = document.getElementById('pinInput');
+        const form  = document.getElementById('pinForm');
+        const MIN   = <?= PIN_MIN_LENGTH ?>;
+        const MAX   = <?= PIN_MAX_LENGTH ?>;
+        let timer   = null;
+
+        input.addEventListener('input', function () {
+            // Только цифры
+            this.value = this.value.replace(/\D/g, '');
+
+            clearTimeout(timer);
+
+            if (this.value.length >= MAX) {
+                form.submit();
+                return;
+            }
+
+            if (this.value.length >= MIN) {
+                timer = setTimeout(function () {
+                    form.submit();
+                }, 500);
+            }
+        });
+    })();
+    </script>
+    <?php endif; ?>
 </body>
 </html>
