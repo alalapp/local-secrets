@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l classes/LlmParser.php)",
+      "Bash(php -l api/llm_parse.php)",
+      "Bash(php -l api/fallback_parse.php)",
+      "Bash(php -l pages/smart_add.php)"
+    ]
+  }
+}

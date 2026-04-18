@@ -24,6 +24,7 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
 
 $input = json_decode(file_get_contents('php://input'), true);
 $text = trim($input['text'] ?? '');
+$currentCategoryId = (int)($input['category_id'] ?? 0) ?: null;
 
 if (empty($text)) {
     json_response(['success' => false, 'error' => 'Текст не указан'], 400);
@@ -52,7 +53,50 @@ foreach ($categories as &$cat) {
 }
 unset($cat);
 
-$result = $llm->parseCredentials($text, $categories);
+$currentCategory = null;
+if ($currentCategoryId) {
+    foreach ($categories as $cat) {
+        if ((int)$cat['id'] === $currentCategoryId) {
+            $currentCategory = $cat;
+            break;
+        }
+    }
+}
+
+// Список существующих тегов из БД — LLM должен выбирать только из них
+$existingTags = array_column(
+    $db->fetchAll("SELECT name FROM tags ORDER BY name"),
+    'name'
+);
+$allowedTagsLower = array_map('mb_strtolower', $existingTags);
+$tagsLowerToName = array_combine($allowedTagsLower, $existingTags);
+
+$result = $llm->parseCredentials($text, $categories, $currentCategory, $existingTags);
+
+// Оставить только теги из БД (case-insensitive), привести к каноническому имени
+if (!empty($result['entries'])) {
+    foreach ($result['entries'] as &$entry) {
+        $filtered = [];
+        foreach ($entry['tags'] ?? [] as $t) {
+            $key = mb_strtolower(trim((string)$t));
+            if ($key !== '' && isset($tagsLowerToName[$key])) {
+                $filtered[$tagsLowerToName[$key]] = true;
+            }
+        }
+        $entry['tags'] = array_keys($filtered);
+    }
+    unset($entry);
+}
+
+// Подстраховка: если у entry категория не указана — применяем текущую
+if ($currentCategory && !empty($result['entries'])) {
+    foreach ($result['entries'] as &$entry) {
+        if (empty($entry['category']) || $entry['category'] === 'Другое') {
+            $entry['category'] = $currentCategory['name'];
+        }
+    }
+    unset($entry);
+}
 
 if (isset($result['error']) && empty($result['entries'])) {
     json_response(['success' => false, 'error' => $result['error']], 422);

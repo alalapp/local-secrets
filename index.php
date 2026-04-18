@@ -66,10 +66,11 @@ ob_start();
         <span class="badge bg-secondary fs-6 ms-2"><?= $totalSecrets ?></span>
     </h4>
     <div>
-        <a href="/local_secrets/pages/smart_add.php" class="btn btn-info btn-sm me-1 text-white">
+        <?php $addQuery = $categoryId ? ('?cat=' . $categoryId) : ''; ?>
+        <a href="/local_secrets/pages/smart_add.php<?= $addQuery ?>" class="btn btn-info btn-sm me-1 text-white">
             <i class="fas fa-robot me-1"></i> Умное добавление
         </a>
-        <a href="/local_secrets/pages/secret_form.php" class="btn btn-success btn-sm">
+        <a href="/local_secrets/pages/secret_form.php<?= $addQuery ?>" class="btn btn-success btn-sm">
             <i class="fas fa-plus me-1"></i> Добавить
         </a>
     </div>
@@ -118,7 +119,7 @@ ob_start();
     <div class="text-center text-muted py-5">
         <i class="fas fa-vault fa-3x mb-3"></i>
         <p>Нет секретов<?= $categoryId ? ' в этой категории' : '' ?></p>
-        <a href="/local_secrets/pages/secret_form.php" class="btn btn-outline-success btn-sm">
+        <a href="/local_secrets/pages/secret_form.php<?= $categoryId ? ('?cat=' . $categoryId) : '' ?>" class="btn btn-outline-success btn-sm">
             <i class="fas fa-plus me-1"></i> Добавить первый секрет
         </a>
     </div>

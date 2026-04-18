@@ -14,6 +14,9 @@ $stats = $secretService->getStats();
 $llm = new LlmParser();
 $llmAvailable = $llm->isAvailable();
 
+$currentCategoryId = isset($_GET['cat']) ? (int)$_GET['cat'] : 0;
+$currentCategory = $currentCategoryId ? $categoryService->getById($currentCategoryId) : null;
+
 $pageTitle = 'Умное добавление';
 
 // Обработка массового сохранения
@@ -64,6 +67,20 @@ ob_start();
     </a>
     <h4 class="mb-0"><i class="fas fa-robot me-2 text-info"></i> Умное добавление</h4>
 </div>
+
+<?php if ($currentCategory): ?>
+    <div class="alert alert-info py-2 d-flex align-items-center">
+        <i class="fas <?= htmlspecialchars($currentCategory['icon'] ?? 'fa-folder') ?> me-2"
+           style="color: <?= htmlspecialchars($currentCategory['color'] ?? '#888') ?>"></i>
+        <div class="flex-grow-1">
+            Парсинг в контексте категории: <strong><?= htmlspecialchars($currentCategory['name']) ?></strong>.
+            Новые записи по умолчанию будут отнесены к ней.
+        </div>
+        <a href="/local_secrets/pages/smart_add.php" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-times me-1"></i> Сбросить
+        </a>
+    </div>
+<?php endif; ?>
 
 <?php if (!$llmAvailable): ?>
     <div class="alert alert-warning">
@@ -132,6 +149,7 @@ ob_start();
 
 <script>
 const categoriesList = <?= json_encode(array_column($categories, 'name'), JSON_UNESCAPED_UNICODE) ?>;
+const CURRENT_CATEGORY_ID = <?= (int)$currentCategoryId ?>;
 let parsedEntries = [];
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -151,7 +169,7 @@ function runParse(url, spinnerText) {
         method: 'POST',
         contentType: 'application/json',
         headers: { 'X-CSRF-TOKEN': CSRF_TOKEN },
-        data: JSON.stringify({ text: text }),
+        data: JSON.stringify({ text: text, category_id: CURRENT_CATEGORY_ID || null }),
         timeout: 200000, // 200 сек для LLM
         success: function(resp) {
             $('#spinner').hide();
@@ -199,21 +217,40 @@ $('#backBtn').on('click', function() {
     $('#step1').show();
 });
 
+// Обработчик редактирования — должен регистрироваться ПОСЛЕ загрузки jQuery
+$(document).on('input change', '.entry-name, .entry-tags, .entry-category', syncEntriesJson);
+
+// Подстраховка: синк перед отправкой формы
+$('form').on('submit', function() {
+    if (typeof syncEntriesJson === 'function') syncEntriesJson();
+});
+
 }); // end DOMContentLoaded
 
 function renderEntries(entries) {
     $('#entriesCount').text(entries.length + ' сервис(ов)');
     let html = '';
     entries.forEach((entry, idx) => {
-        html += `<div class="border rounded p-3 mb-3">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <h5 class="mb-0">${escapeHtml(entry.service_name)}</h5>
-                <span class="badge bg-secondary">${escapeHtml(entry.category || 'Другое')}</span>
+        const tagsStr = (entry.tags || []).join(', ');
+        html += `<div class="border rounded p-3 mb-3" data-idx="${idx}">
+            <div class="row g-2 mb-2">
+                <div class="col-md-8">
+                    <label class="form-label small text-muted mb-1">Название сервиса</label>
+                    <input type="text" class="form-control entry-name" data-idx="${idx}"
+                           value="${escapeAttr(entry.service_name)}" placeholder="Название сервиса">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted mb-1">Категория</label>
+                    <select class="form-select entry-category" data-idx="${idx}">
+                        <option value="">— Без категории —</option>
+                        ${buildCategoryOptions(entry.category)}
+                    </select>
+                </div>
             </div>`;
         if (entry.description) {
             html += `<p class="text-muted small mb-2">${escapeHtml(entry.description)}</p>`;
         }
-        html += '<table class="table table-sm mb-1">';
+        html += '<table class="table table-sm mb-2">';
         (entry.fields || []).forEach(f => {
             const masked = f.type === 'password' || f.type === 'token'
                 ? '********' : escapeHtml(f.value);
@@ -224,17 +261,55 @@ function renderEntries(entries) {
             </tr>`;
         });
         html += '</table>';
-        if (entry.tags && entry.tags.length) {
-            html += '<div>';
-            entry.tags.forEach(t => {
-                html += `<span class="badge border border-secondary text-secondary me-1">${escapeHtml(t)}</span>`;
-            });
-            html += '</div>';
-        }
+        html += `<div>
+            <label class="form-label small text-muted mb-1">Теги <span class="text-muted">(через запятую)</span></label>
+            <input type="text" class="form-control form-control-sm entry-tags" data-idx="${idx}"
+                   value="${escapeAttr(tagsStr)}" placeholder="api, production, personal...">
+        </div>`;
         html += '</div>';
     });
     $('#entriesPreview').html(html);
-    $('#entriesJson').val(JSON.stringify(entries));
+    syncEntriesJson();
+}
+
+function syncEntriesJson() {
+    $('.entry-name').each(function() {
+        const i = parseInt($(this).data('idx'), 10);
+        if (parsedEntries[i]) parsedEntries[i].service_name = $(this).val().trim();
+    });
+    $('.entry-category').each(function() {
+        const i = parseInt($(this).data('idx'), 10);
+        if (parsedEntries[i]) parsedEntries[i].category = $(this).val();
+    });
+    $('.entry-tags').each(function() {
+        const i = parseInt($(this).data('idx'), 10);
+        if (parsedEntries[i]) {
+            const raw = $(this).val().trim();
+            parsedEntries[i].tags = raw === '' ? [] : raw.split(',').map(s => s.trim()).filter(s => s !== '');
+        }
+    });
+    $('#entriesJson').val(JSON.stringify(parsedEntries));
+}
+
+function buildCategoryOptions(current) {
+    const cur = (current || '').toLowerCase();
+    let found = false;
+    let html = '';
+    categoriesList.forEach(function(name) {
+        const selected = name.toLowerCase() === cur;
+        if (selected) found = true;
+        html += `<option value="${escapeAttr(name)}"${selected ? ' selected' : ''}>${escapeHtml(name)}</option>`;
+    });
+    // Если LLM вернул категорию, которой нет в справочнике — сохраняем её как отдельный вариант
+    if (!found && current) {
+        html += `<option value="${escapeAttr(current)}" selected>${escapeHtml(current)} (новая)</option>`;
+    }
+    return html;
+}
+
+function escapeAttr(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 function escapeHtml(text) {

@@ -74,4 +74,86 @@ class TagService {
     public function cleanup(): int {
         return $this->db->execute("DELETE FROM tags WHERE id NOT IN (SELECT DISTINCT tag_id FROM secret_tags)");
     }
+
+    public function getById(int $id): ?array {
+        $row = $this->db->fetchOne("SELECT * FROM tags WHERE id = ?", [$id]);
+        return $row ?: null;
+    }
+
+    public function getByName(string $name): ?array {
+        $row = $this->db->fetchOne("SELECT * FROM tags WHERE name = ?", [$name]);
+        return $row ?: null;
+    }
+
+    public function create(string $name): int {
+        $name = trim($name);
+        if ($name === '') {
+            throw new RuntimeException('Название тега не может быть пустым');
+        }
+        if ($this->getByName($name)) {
+            throw new RuntimeException("Тег «{$name}» уже существует");
+        }
+        $this->db->execute("INSERT INTO tags (name) VALUES (?)", [$name]);
+        $id = (int)$this->db->lastInsertId();
+        Logger::log('create', 'tag', $id, "Создан тег: {$name}");
+        return $id;
+    }
+
+    /**
+     * Переименовать тег. Если тег с таким именем уже есть — выполняется слияние.
+     */
+    public function rename(int $id, string $newName): void {
+        $newName = trim($newName);
+        if ($newName === '') {
+            throw new RuntimeException('Название тега не может быть пустым');
+        }
+        $current = $this->getById($id);
+        if (!$current) {
+            throw new RuntimeException('Тег не найден');
+        }
+        if ($current['name'] === $newName) {
+            return;
+        }
+        $existing = $this->getByName($newName);
+        if ($existing && (int)$existing['id'] !== $id) {
+            $this->merge($id, (int)$existing['id']);
+            return;
+        }
+        $this->db->execute("UPDATE tags SET name = ? WHERE id = ?", [$newName, $id]);
+        Logger::log('update', 'tag', $id, "Переименован тег: {$current['name']} → {$newName}");
+    }
+
+    public function delete(int $id): void {
+        $tag = $this->getById($id);
+        if (!$tag) return;
+        $this->db->execute("DELETE FROM tags WHERE id = ?", [$id]);
+        Logger::log('delete', 'tag', $id, "Удалён тег: {$tag['name']}");
+    }
+
+    /**
+     * Слить тег $sourceId в $targetId: все связи переносятся, исходный удаляется.
+     */
+    public function merge(int $sourceId, int $targetId): void {
+        if ($sourceId === $targetId) return;
+        $src = $this->getById($sourceId);
+        $dst = $this->getById($targetId);
+        if (!$src || !$dst) {
+            throw new RuntimeException('Один из тегов не найден');
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $this->db->execute(
+                "UPDATE IGNORE secret_tags SET tag_id = ? WHERE tag_id = ?",
+                [$targetId, $sourceId]
+            );
+            $this->db->execute("DELETE FROM secret_tags WHERE tag_id = ?", [$sourceId]);
+            $this->db->execute("DELETE FROM tags WHERE id = ?", [$sourceId]);
+            $this->db->commit();
+        } catch (Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+        Logger::log('update', 'tag', $targetId, "Слияние тега «{$src['name']}» → «{$dst['name']}»");
+    }
 }

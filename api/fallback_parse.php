@@ -21,6 +21,7 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
 
 $input = json_decode(file_get_contents('php://input'), true);
 $text = trim($input['text'] ?? '');
+$currentCategoryId = (int)($input['category_id'] ?? 0) ?: null;
 
 if (empty($text)) {
     json_response(['success' => false, 'error' => 'Текст не указан'], 400);
@@ -28,6 +29,39 @@ if (empty($text)) {
 
 $parser = new FallbackParser();
 $result = $parser->parse($text);
+
+// Оставить только существующие теги из БД
+$db = Database::getInstance();
+$existingTags = array_column($db->fetchAll("SELECT name FROM tags ORDER BY name"), 'name');
+$tagsLowerToName = [];
+foreach ($existingTags as $n) {
+    $tagsLowerToName[mb_strtolower($n)] = $n;
+}
+if (!empty($result['entries'])) {
+    foreach ($result['entries'] as &$entry) {
+        $filtered = [];
+        foreach ($entry['tags'] ?? [] as $t) {
+            $key = mb_strtolower(trim((string)$t));
+            if ($key !== '' && isset($tagsLowerToName[$key])) {
+                $filtered[$tagsLowerToName[$key]] = true;
+            }
+        }
+        $entry['tags'] = array_keys($filtered);
+    }
+    unset($entry);
+}
+
+if ($currentCategoryId && !empty($result['entries'])) {
+    $cat = (new CategoryService())->getById($currentCategoryId);
+    if ($cat) {
+        foreach ($result['entries'] as &$entry) {
+            if (empty($entry['category']) || $entry['category'] === 'Другое') {
+                $entry['category'] = $cat['name'];
+            }
+        }
+        unset($entry);
+    }
+}
 
 if (empty($result['entries'])) {
     json_response(['success' => false, 'error' => 'Не удалось распознать учётные данные'], 422);

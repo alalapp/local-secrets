@@ -9,8 +9,8 @@ class LlmParser {
      * Парсить неструктурированный текст с учётными данными
      * @return array{entries: array, error?: string}
      */
-    public function parseCredentials(string $rawText, array $categories = []): array {
-        $systemPrompt = $this->buildSystemPrompt($categories);
+    public function parseCredentials(string $rawText, array $categories = [], ?array $currentCategory = null, array $allowedTags = []): array {
+        $systemPrompt = $this->buildSystemPrompt($categories, $currentCategory, $allowedTags);
 
         try {
             $response = $this->callLlm($systemPrompt, $rawText);
@@ -65,7 +65,7 @@ class LlmParser {
         }
     }
 
-    private function buildSystemPrompt(array $categories): string {
+    private function buildSystemPrompt(array $categories, ?array $currentCategory = null, array $allowedTags = []): string {
         $categoryList = !empty($categories)
             ? implode(', ', array_column($categories, 'name'))
             : 'API Keys, Banking, Cloud Services, Databases, Email, Firebase, Hosting, Social Media, 1С, Messengers, VPN / Proxy, CRM, Другое';
@@ -83,6 +83,25 @@ class LlmParser {
             if ($lines) {
                 $templateDesc = "\n\nШаблоны полей по категориям (используй эти названия полей при совпадении категории):\n" . implode("\n", $lines);
             }
+        }
+
+        $currentCategoryBlock = '';
+        if ($currentCategory && !empty($currentCategory['name'])) {
+            $curName = $currentCategory['name'];
+            $curFields = '';
+            if (!empty($currentCategory['field_templates'])) {
+                $fNames = array_map(fn($t) => $t['field_name'], $currentCategory['field_templates']);
+                $curFields = ' Предпочитай названия полей: ' . implode(', ', $fNames) . '.';
+            }
+            $currentCategoryBlock = "\n\nКОНТЕКСТ: Пользователь сейчас работает в категории «{$curName}». По умолчанию ставь category=\"{$curName}\" для всех entries, если из текста ЯВНО не следует иная категория.{$curFields}";
+        }
+
+        $tagsBlock = '';
+        if (!empty($allowedTags)) {
+            $tagsStr = implode(', ', $allowedTags);
+            $tagsBlock = "\n\nДОПУСТИМЫЕ ТЕГИ (используй ТОЛЬКО из этого списка, НЕ придумывай новые; если ни один не подходит — верни пустой массив tags): {$tagsStr}";
+        } else {
+            $tagsBlock = "\n\nВ базе нет тегов — всегда возвращай tags: [].";
         }
 
         return <<<PROMPT
@@ -114,11 +133,11 @@ class LlmParser {
 3. Тип поля определяй по содержимому: URL → "url", email → "email", пароль → "password", ключи/токены → "token", заметки → "note", остальное → "text"
 4. Название поля (name) — используй названия из шаблона категории, если категория совпадает. Для полей, не описанных в шаблоне — придумай понятное название на русском или английском
 5. Если категория не подходит ни под одну — используй "Другое"
-6. Теги — короткие ключевые слова, описывающие сервис
+6. Теги — ТОЛЬКО из допустимого списка ниже (см. «ДОПУСТИМЫЕ ТЕГИ»). НЕ придумывай новые теги. Если ни один не подходит — верни пустой массив tags.
 7. Если текст не содержит учётных данных — верни {"entries": [], "error": "Не найдены учётные данные"}
 8. Разделяй текст по сервисам — каждый блок с учётными данными = отдельный entry
 
-Доступные категории: {$categoryList}{$templateDesc}
+Доступные категории: {$categoryList}{$templateDesc}{$currentCategoryBlock}{$tagsBlock}
 PROMPT;
     }
 

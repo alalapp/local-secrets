@@ -16,6 +16,7 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $isEdit = $id > 0;
 $secret = null;
 $error = '';
+$prefillCatId = (!$isEdit && isset($_GET['cat'])) ? (int)$_GET['cat'] : 0;
 
 if ($isEdit) {
     $secret = $secretService->getById($id);
@@ -111,7 +112,7 @@ ob_start();
                         <option value="">— Без категории —</option>
                         <?php foreach ($categories as $cat): ?>
                             <option value="<?= $cat['id'] ?>"
-                                <?= ($secret['category_id'] ?? $_POST['category_id'] ?? '') == $cat['id'] ? 'selected' : '' ?>>
+                                <?= ($secret['category_id'] ?? $_POST['category_id'] ?? $prefillCatId ?? '') == $cat['id'] ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($cat['name']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -258,7 +259,68 @@ ob_start();
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const isEdit = <?= $isEdit ? 'true' : 'false' ?>;
+    const prefillCatId = <?= (int)$prefillCatId ?>;
     const categorySelect = document.querySelector('select[name="category_id"]');
+
+    function loadCategoryTemplate(catId, skipConfirm) {
+        if (!catId) return;
+
+        const existingValues = document.querySelectorAll('#fieldsContainer input[name="field_value[]"]');
+        let hasValues = false;
+        existingValues.forEach(input => {
+            if (input.value.trim()) hasValues = true;
+        });
+
+        if (hasValues && !skipConfirm && !confirm('Заменить текущие поля шаблоном категории?')) {
+            return;
+        }
+
+        $.get('/local_secrets/api/category_templates.php', { category_id: catId }, function(resp) {
+            if (resp.success && resp.data.length > 0) {
+                $('#fieldsContainer').empty();
+                resp.data.forEach(function(tpl) {
+                    const inputType = tpl.field_type === 'password' ? 'password' : 'text';
+                    const row = `<div class="row g-2 mb-2 field-row">
+                        <div class="col-md-3">
+                            <input type="text" name="field_name[]" class="form-control form-control-sm"
+                                   value="${escapeAttr(tpl.field_name)}" placeholder="Название поля">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group input-group-sm">
+                                <input type="${inputType}" name="field_value[]"
+                                       class="form-control field-value-input"
+                                       placeholder="${escapeAttr(tpl.placeholder || '')}">
+                                <button type="button" class="btn btn-outline-secondary toggle-visibility" title="Показать/скрыть">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="field_type[]" class="form-select form-select-sm">
+                                <option value="text" ${tpl.field_type==='text'?'selected':''}>Текст</option>
+                                <option value="password" ${tpl.field_type==='password'?'selected':''}>Пароль</option>
+                                <option value="url" ${tpl.field_type==='url'?'selected':''}>URL</option>
+                                <option value="email" ${tpl.field_type==='email'?'selected':''}>Email</option>
+                                <option value="token" ${tpl.field_type==='token'?'selected':''}>Токен</option>
+                                <option value="note" ${tpl.field_type==='note'?'selected':''}>Заметка</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-field">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>`;
+                    $('#fieldsContainer').append(row);
+                });
+                if (typeof showToast === 'function') showToast('Загружен шаблон полей для категории', 'info');
+            }
+        });
+    }
+
+    if (!isEdit && prefillCatId) {
+        loadCategoryTemplate(prefillCatId, true);
+    }
 
     if (!isEdit && categorySelect) {
         categorySelect.addEventListener('change', function() {

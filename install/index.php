@@ -78,10 +78,13 @@ function installDatabase(string $host, int $port, string $user, string $pass, st
 
         $sql = file_get_contents($schemaPath);
 
+        // Убрать строки-комментарии, чтобы не обрезать следующий за ними оператор
+        $sql = preg_replace('/^--[^\n]*/m', '', $sql);
+
         // Разбить на отдельные запросы (по ;)
         $statements = array_filter(
-            array_map('trim', preg_split('/;\s*\n/', $sql)),
-            fn($s) => $s !== '' && !str_starts_with($s, '--')
+            array_map('trim', preg_split('/;\s*(?:\n|$)/', $sql)),
+            fn($s) => $s !== ''
         );
 
         foreach ($statements as $stmt) {

@@ -78,8 +78,18 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/local_secrets/pages/tags.php">
+                                <i class="fas fa-tags me-2"></i> Теги
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/local_secrets/pages/settings.php">
                                 <i class="fas fa-cog me-2"></i> Настройки
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/local_secrets/pages/backup.php">
+                                <i class="fas fa-database me-2"></i> Резервное копирование
                             </a>
                         </li>
                     </ul>

@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS `auth_pin` (
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+
+
 -- ------------------------------------------------------------
 -- Категории
 -- ------------------------------------------------------------
@@ -68,7 +71,6 @@ CREATE TABLE IF NOT EXISTS `secrets` (
     CONSTRAINT `fk_secrets_category` FOREIGN KEY (`category_id`)
         REFERENCES `categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- ------------------------------------------------------------
 -- Поля секрета (значения зашифрованы AES-256)
 -- ------------------------------------------------------------
