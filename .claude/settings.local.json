@@ -4,7 +4,21 @@
       "Bash(php -l classes/LlmParser.php)",
       "Bash(php -l api/llm_parse.php)",
       "Bash(php -l api/fallback_parse.php)",
-      "Bash(php -l pages/smart_add.php)"
+      "Bash(php -l pages/smart_add.php)",
+      "Bash(php -l \"E:/PROJECTS/local_secrets/classes/SecretService.php\")",
+      "Bash(php -l \"E:/PROJECTS/local_secrets/pages/secret_view.php\")",
+      "Bash(php -l \"E:/PROJECTS/local_secrets/pages/dashboard.php\")",
+      "Bash(php -l \"E:/PROJECTS/local_secrets/pages/settings.php\")",
+      "Bash(php -l \"E:/PROJECTS/local_secrets/templates/layout.php\")",
+      "Bash(mysql -u root local_secrets)",
+      "Bash(where mysql *)",
+      "Bash(where.exe mysql *)",
+      "Read(//c/xampp/mysql/bin/**)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/wamp64/bin/**)",
+      "Read(//d/xampp/mysql/bin/**)",
+      "Read(//e/xampp/mysql/bin/**)",
+      "Bash(php -l install/index.php)"
     ]
   }
 }

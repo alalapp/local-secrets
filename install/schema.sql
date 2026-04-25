@@ -63,10 +63,14 @@ CREATE TABLE IF NOT EXISTS `secrets` (
     `category_id` INT UNSIGNED NULL,
     `description` TEXT NULL COMMENT 'AES-256 зашифровано',
     `is_favorite` TINYINT(1) NOT NULL DEFAULT 0,
+    `view_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Кол-во открытий секрета',
+    `last_viewed_at` DATETIME NULL COMMENT 'Время последнего просмотра',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY `idx_category` (`category_id`),
     KEY `idx_favorite` (`is_favorite`),
+    KEY `idx_view_count` (`view_count`),
+    KEY `idx_last_viewed` (`last_viewed_at`),
     FULLTEXT KEY `ft_service` (`service_name`),
     CONSTRAINT `fk_secrets_category` FOREIGN KEY (`category_id`)
         REFERENCES `categories` (`id`) ON DELETE SET NULL

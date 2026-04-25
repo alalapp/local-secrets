@@ -1,28 +1,41 @@
-<nav class="navbar navbar-expand-md border-bottom" data-bs-theme="dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/local_secrets/index.php">
-            <i class="fas fa-shield-halved me-2 text-info"></i><?= APP_NAME ?>
-        </a>
+<header class="am-header">
+    <button class="am-burger" id="amBurger" type="button" aria-label="Меню">
+        <i class="fas fa-bars"></i>
+    </button>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+    <h1 class="am-header-title"><?= htmlspecialchars($pageTitle ?? APP_NAME) ?></h1>
 
-        <div class="d-flex align-items-center">
-            <!-- Поиск -->
-            <div class="position-relative me-3">
-                <input type="text" class="form-control form-control-sm border-secondary"
-                       id="globalSearch" placeholder="Поиск..." style="width: 400px;">
-                <div id="searchResults" class="dropdown-menu w-100" style="display:none; max-height:300px; overflow-y:auto;"></div>
-            </div>
+    <div class="am-search-wrap">
+        <i class="fas fa-search am-search-icon"></i>
+        <input type="text" class="am-search-input" id="globalSearch"
+               placeholder="Поиск по сервисам, тегам…"
+               autocomplete="off" spellcheck="false">
+        <div class="am-search-results" id="searchResults"></div>
+    </div>
 
-            <button class="btn btn-sm me-2 theme-toggle" id="themeToggle" title="Сменить тему" onclick="toggleTheme()">
-                <i class="fas fa-sun" id="themeIcon"></i>
+    <div class="am-header-actions">
+        <div class="am-avatar-wrap">
+            <button class="am-avatar" type="button"
+                    data-am-dropdown-toggle="amUserDropdown"
+                    title="Меню пользователя">
+                <i class="fas fa-user"></i>
             </button>
-            <span class="text-muted small me-3">v<?= APP_VERSION ?></span>
-            <a href="/local_secrets/logout.php" class="btn btn-outline-secondary btn-sm" title="Выход">
-                <i class="fas fa-right-from-bracket"></i>
-            </a>
+            <div class="am-dropdown" id="amUserDropdown">
+                <div class="am-dropdown-meta">
+                    <?= APP_NAME ?> · v<?= APP_VERSION ?>
+                </div>
+                <div class="am-dropdown-divider"></div>
+                <a class="am-dropdown-item" href="/local_secrets/pages/settings.php">
+                    <i class="fas fa-sliders"></i> Настройки
+                </a>
+                <a class="am-dropdown-item" href="/local_secrets/pages/backup.php">
+                    <i class="fas fa-database"></i> Резервное копирование
+                </a>
+                <div class="am-dropdown-divider"></div>
+                <a class="am-dropdown-item" href="/local_secrets/logout.php">
+                    <i class="fas fa-right-from-bracket"></i> Выйти
+                </a>
+            </div>
         </div>
     </div>
-</nav>
+</header>

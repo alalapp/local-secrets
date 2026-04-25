@@ -12,7 +12,6 @@ $stats           = (new SecretService())->getStats();
 $importSuccess = htmlspecialchars($_GET['import_success'] ?? '');
 $importError   = htmlspecialchars($_GET['import_error']   ?? '');
 
-// Размер папки БД не доступен напрямую, покажем кол-во записей
 $db         = Database::getInstance();
 $dbSizeMb   = $db->fetchColumn(
     "SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2)
@@ -24,213 +23,188 @@ $pageTitle = 'Резервное копирование';
 ob_start();
 ?>
 
-<h4 class="mb-3"><i class="fas fa-database me-2"></i> Резервное копирование</h4>
+<div class="am-page-head">
+    <div class="am-page-head-text">
+        <div class="am-eyebrow">Администрирование</div>
+        <h1 class="am-h1"><i class="fas fa-database am-muted"></i> Резервное копирование</h1>
+    </div>
+</div>
 
 <?php if ($importSuccess): ?>
-    <div class="alert alert-success alert-dismissible py-2 fade show">
-        <i class="fas fa-check-circle me-1"></i> <?= $importSuccess ?>
-        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+    <div class="am-alert am-alert-success">
+        <i class="fas fa-circle-check"></i>
+        <span><?= $importSuccess ?></span>
+        <button type="button" class="am-alert-close" aria-label="Закрыть"><i class="fas fa-times"></i></button>
     </div>
 <?php endif; ?>
 <?php if ($importError): ?>
-    <div class="alert alert-danger alert-dismissible py-2 fade show">
-        <i class="fas fa-times-circle me-1"></i> <?= $importError ?>
-        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+    <div class="am-alert am-alert-danger">
+        <i class="fas fa-circle-exclamation"></i>
+        <span><?= $importError ?></span>
+        <button type="button" class="am-alert-close" aria-label="Закрыть"><i class="fas fa-times"></i></button>
     </div>
 <?php endif; ?>
 
 <!-- Статус -->
-<div class="row g-2 mb-3">
-    <div class="col-auto">
-        <span class="badge bg-secondary fs-6">
-            <i class="fas fa-lock me-1"></i> <?= $stats['fields'] ?> зашифрованных полей
-        </span>
-    </div>
-    <div class="col-auto">
-        <span class="badge bg-secondary fs-6">
-            <i class="fas fa-key me-1"></i> <?= $stats['total'] ?> секретов
-        </span>
-    </div>
+<div class="am-flex am-flex-wrap am-gap-2 am-mb-4">
+    <span class="am-chip">
+        <i class="fas fa-lock"></i> <?= (int)$stats['fields'] ?> зашифрованных полей
+    </span>
+    <span class="am-chip">
+        <i class="fas fa-key"></i> <?= (int)$stats['total'] ?> секретов
+    </span>
     <?php if ($dbSizeMb !== null): ?>
-    <div class="col-auto">
-        <span class="badge bg-secondary fs-6">
-            <i class="fas fa-hdd me-1"></i> ~<?= $dbSizeMb ?> МБ в БД
+        <span class="am-chip">
+            <i class="fas fa-hard-drive"></i> ~<?= $dbSizeMb ?> МБ в БД
         </span>
-    </div>
     <?php endif; ?>
 </div>
 
-<div class="row g-3">
+<div class="am-grid am-grid-cols-2 am-mb-3">
 
-    <!-- ── Экспорт БД ── -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header fw-semibold">
-                <i class="fas fa-file-arrow-down me-2 text-success"></i> Экспорт базы данных
-            </div>
-            <div class="card-body d-flex flex-column">
-                <p class="text-muted small mb-2">
-                    Полный SQL-дамп всех таблиц: секреты (зашифрованы AES-256),
-                    категории, теги, лог активности.
-                </p>
-                <div class="alert alert-warning py-2 small mb-3">
-                    <i class="fas fa-triangle-exclamation me-1"></i>
-                    Дамп содержит зашифрованные данные. Для восстановления потребуется
-                    тот же <strong>ключ шифрования</strong> из <code>config.php</code>.
-                </div>
-                <form method="POST" action="/local_secrets/api/backup.php" class="mt-auto">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="action"     value="export_sql">
-                    <button type="submit" class="btn btn-success btn-sm">
-                        <i class="fas fa-download me-1"></i> Скачать SQL-дамп
-                    </button>
-                </form>
-            </div>
+    <!-- Экспорт БД -->
+    <div class="am-card">
+        <h3 class="am-h3"><i class="fas fa-file-arrow-down am-text-success"></i> Экспорт базы данных</h3>
+        <p class="am-text-sm am-muted am-mb-3">
+            Полный SQL-дамп всех таблиц: секреты (зашифрованы AES-256),
+            категории, теги, лог активности.
+        </p>
+        <div class="am-alert am-alert-warning">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>
+                Дамп содержит зашифрованные данные. Для восстановления потребуется
+                тот же <strong>ключ шифрования</strong> из <code>config.php</code>.
+            </span>
         </div>
+        <form method="POST" action="/local_secrets/api/backup.php">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <input type="hidden" name="action"     value="export_sql">
+            <button type="submit" class="am-btn am-btn-primary am-btn-sm">
+                <i class="fas fa-download"></i> Скачать SQL-дамп
+            </button>
+        </form>
     </div>
 
-    <!-- ── Экспорт настроек ── -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header fw-semibold">
-                <i class="fas fa-sliders me-2 text-info"></i> Экспорт настроек
-            </div>
-            <div class="card-body d-flex flex-column">
-                <p class="text-muted small mb-2">
-                    Сохраняет параметры приложения в JSON-файл:
-                    отображение, сессия, таймауты, конфигурация LLM.
-                </p>
-                <div class="alert alert-info py-2 small mb-3">
-                    <i class="fas fa-circle-info me-1"></i>
-                    Ключ шифрования и учётные данные БД
-                    <strong>не включены</strong> в этот файл.
-                </div>
-                <form method="POST" action="/local_secrets/api/backup.php" class="mt-auto">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="action"     value="export_settings">
-                    <button type="submit" class="btn btn-info btn-sm">
-                        <i class="fas fa-download me-1"></i> Скачать настройки (JSON)
-                    </button>
-                </form>
-            </div>
+    <!-- Экспорт настроек -->
+    <div class="am-card">
+        <h3 class="am-h3"><i class="fas fa-sliders am-text-info"></i> Экспорт настроек</h3>
+        <p class="am-text-sm am-muted am-mb-3">
+            Сохраняет параметры приложения в JSON-файл:
+            отображение, сессия, таймауты, конфигурация LLM.
+        </p>
+        <div class="am-alert am-alert-info">
+            <i class="fas fa-circle-info"></i>
+            <span>
+                Ключ шифрования и учётные данные БД
+                <strong>не включены</strong> в этот файл.
+            </span>
         </div>
+        <form method="POST" action="/local_secrets/api/backup.php">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <input type="hidden" name="action"     value="export_settings">
+            <button type="submit" class="am-btn am-btn-ghost am-btn-sm">
+                <i class="fas fa-download"></i> Скачать настройки (JSON)
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Ключ шифрования -->
+<div class="am-card am-mb-3" style="border-color: var(--am-amber);">
+    <h3 class="am-h3" style="color: var(--am-amber);">
+        <i class="fas fa-key"></i> Ключ шифрования (ENCRYPTION_KEY)
+    </h3>
+    <div class="am-alert am-alert-danger">
+        <i class="fas fa-skull-crossbones"></i>
+        <span>
+            <strong>Критически важно!</strong>
+            Без этого ключа все зашифрованные данные будут <strong>безвозвратно утеряны</strong>.
+            Храните ключ отдельно от дампа базы данных — в менеджере паролей или на бумаге.
+        </span>
+    </div>
+    <div class="am-input-group">
+        <input type="password" id="encKeyInput" class="am-input am-input-mono"
+               value="<?= htmlspecialchars(ENCRYPTION_KEY) ?>"
+               readonly autocomplete="off">
+        <button class="am-input-group-addon" type="button"
+                id="encKeyToggle" onclick="toggleEncKey()" title="Показать/скрыть">
+            <i class="fas fa-eye" id="encKeyEyeIcon"></i>
+        </button>
+        <button class="am-input-group-addon" type="button"
+                onclick="copyEncKey()" title="Скопировать ключ">
+            <i class="fas fa-copy"></i>
+        </button>
+    </div>
+    <p class="am-text-sm am-muted am-mt-2 am-mb-0">
+        Ключ хранится в <code>config.php</code>. Сохраните резервную копию
+        всего этого файла в надёжном месте.
+    </p>
+</div>
+
+<div class="am-grid am-grid-cols-2">
+    <!-- Восстановление из дампа -->
+    <div class="am-card" style="border-color: var(--am-red);">
+        <h3 class="am-h3" style="color: var(--am-red);">
+            <i class="fas fa-file-arrow-up"></i> Восстановление из дампа
+        </h3>
+        <p class="am-text-sm am-muted am-mb-3">
+            Импортирует SQL-дамп в базу данных.
+            <strong>Существующие таблицы будут удалены и перезаписаны!</strong>
+        </p>
+        <div class="am-alert am-alert-danger">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>
+                После восстановления убедитесь, что ключ шифрования
+                в <code>config.php</code> соответствует тому, который использовался
+                при создании дампа.
+            </span>
+        </div>
+        <form method="POST" action="/local_secrets/api/backup.php"
+              enctype="multipart/form-data"
+              onsubmit="return confirmSqlImport()">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <input type="hidden" name="action"     value="import_sql">
+            <div class="am-field">
+                <label class="am-label">SQL-файл резервной копии</label>
+                <input type="file" name="sql_file" class="am-input am-input-sm"
+                       accept=".sql" required>
+            </div>
+            <label class="am-check am-mb-3">
+                <input type="checkbox" id="confirmSqlCheck" required>
+                <span class="am-text-warning">Я понимаю, что текущие данные будут перезаписаны</span>
+            </label>
+            <button type="submit" class="am-btn am-btn-danger am-btn-sm">
+                <i class="fas fa-upload"></i> Восстановить базу данных
+            </button>
+        </form>
     </div>
 
-    <!-- ── Ключ шифрования ── -->
-    <div class="col-12">
-        <div class="card border-warning">
-            <div class="card-header fw-semibold text-warning">
-                <i class="fas fa-key me-2"></i> Ключ шифрования (ENCRYPTION_KEY)
-            </div>
-            <div class="card-body">
-                <div class="alert alert-danger py-2 small mb-3">
-                    <i class="fas fa-skull-crossbones me-1"></i>
-                    <strong>Критически важно!</strong>
-                    Без этого ключа все зашифрованные данные будут <strong>безвозвратно утеряны</strong>.
-                    Храните ключ отдельно от дампа базы данных — в менеджере паролей или на бумаге.
-                </div>
-                <div class="input-group input-group-sm">
-                    <input type="password" id="encKeyInput"
-                           class="form-control font-monospace"
-                           value="<?= htmlspecialchars(ENCRYPTION_KEY) ?>"
-                           readonly autocomplete="off">
-                    <button class="btn btn-outline-secondary" type="button"
-                            id="encKeyToggle" onclick="toggleEncKey()" title="Показать/скрыть">
-                        <i class="fas fa-eye" id="encKeyEyeIcon"></i>
-                    </button>
-                    <button class="btn btn-outline-warning" type="button"
-                            onclick="copyEncKey()" title="Скопировать ключ">
-                        <i class="fas fa-copy me-1"></i> Копировать
-                    </button>
-                </div>
-                <p class="text-muted small mt-1 mb-0">
-                    Ключ хранится в <code>config.php</code>. Сохраните резервную копию
-                    всего этого файла в надёжном месте.
-                </p>
-            </div>
+    <!-- Импорт настроек -->
+    <div class="am-card">
+        <h3 class="am-h3"><i class="fas fa-file-import am-text-info"></i> Импорт настроек</h3>
+        <p class="am-text-sm am-muted am-mb-3">
+            Восстанавливает настройки приложения из ранее сохранённого JSON-файла.
+            Ключ шифрования и данные БД не затрагиваются.
+        </p>
+        <div class="am-alert am-alert-secondary">
+            <i class="fas fa-circle-info"></i>
+            <span>После импорта перезагрузите страницу, чтобы новые настройки вступили в силу.</span>
         </div>
+        <form method="POST" action="/local_secrets/api/backup.php"
+              enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <input type="hidden" name="action"     value="import_settings">
+            <div class="am-field">
+                <label class="am-label">JSON-файл настроек</label>
+                <input type="file" name="settings_file" class="am-input am-input-sm"
+                       accept=".json" required>
+            </div>
+            <button type="submit" class="am-btn am-btn-primary am-btn-sm">
+                <i class="fas fa-upload"></i> Импортировать настройки
+            </button>
+        </form>
     </div>
-
-    <!-- ── Восстановление из дампа ── -->
-    <div class="col-md-6">
-        <div class="card border-danger h-100">
-            <div class="card-header fw-semibold text-danger">
-                <i class="fas fa-file-arrow-up me-2"></i> Восстановление из дампа
-            </div>
-            <div class="card-body d-flex flex-column">
-                <p class="text-muted small mb-2">
-                    Импортирует SQL-дамп в базу данных.
-                    <strong>Существующие таблицы будут удалены и перезаписаны!</strong>
-                </p>
-                <div class="alert alert-danger py-2 small mb-3">
-                    <i class="fas fa-triangle-exclamation me-1"></i>
-                    После восстановления убедитесь, что ключ шифрования
-                    в <code>config.php</code> соответствует тому, который использовался
-                    при создании дампа.
-                </div>
-                <form method="POST" action="/local_secrets/api/backup.php"
-                      enctype="multipart/form-data"
-                      onsubmit="return confirmSqlImport()"
-                      class="mt-auto">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="action"     value="import_sql">
-                    <div class="mb-2">
-                        <label class="form-label small fw-semibold">SQL-файл резервной копии</label>
-                        <input type="file" name="sql_file"
-                               class="form-control form-control-sm"
-                               accept=".sql" required>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input"
-                               id="confirmSqlCheck" required>
-                        <label class="form-check-label small text-warning"
-                               for="confirmSqlCheck">
-                            Я понимаю, что текущие данные будут перезаписаны
-                        </label>
-                    </div>
-                    <button type="submit" class="btn btn-danger btn-sm">
-                        <i class="fas fa-upload me-1"></i> Восстановить базу данных
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- ── Импорт настроек ── -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header fw-semibold">
-                <i class="fas fa-file-import me-2 text-primary"></i> Импорт настроек
-            </div>
-            <div class="card-body d-flex flex-column">
-                <p class="text-muted small mb-2">
-                    Восстанавливает настройки приложения из ранее сохранённого JSON-файла.
-                    Ключ шифрования и данные БД не затрагиваются.
-                </p>
-                <div class="alert alert-secondary py-2 small mb-3">
-                    <i class="fas fa-circle-info me-1"></i>
-                    После импорта перезагрузите страницу, чтобы новые настройки вступили в силу.
-                </div>
-                <form method="POST" action="/local_secrets/api/backup.php"
-                      enctype="multipart/form-data"
-                      class="mt-auto">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="action"     value="import_settings">
-                    <div class="mb-2">
-                        <label class="form-label small fw-semibold">JSON-файл настроек</label>
-                        <input type="file" name="settings_file"
-                               class="form-control form-control-sm"
-                               accept=".json" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="fas fa-upload me-1"></i> Импортировать настройки
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-</div><!-- /row -->
+</div>
 
 <script>
 function toggleEncKey() {

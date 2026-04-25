@@ -188,6 +188,85 @@ class SecretService {
     }
 
     /**
+     * Увеличить счётчик просмотров секрета и обновить last_viewed_at.
+     * Вызывается при открытии страницы просмотра секрета.
+     */
+    public function incrementViewCount(int $id): void {
+        $this->db->execute(
+            "UPDATE secrets SET view_count = view_count + 1, last_viewed_at = NOW() WHERE id = ?",
+            [$id]
+        );
+    }
+
+    /**
+     * Часто используемые секреты — топ N по view_count.
+     * Если открытий меньше limit, добор по is_favorite/updated_at (без дублей).
+     */
+    public function getMostUsed(int $limit): array {
+        $limit = max(1, $limit);
+        $sql = "
+            SELECT s.*, c.name AS category_name, c.icon AS category_icon, c.color AS category_color,
+                   (SELECT COUNT(*) FROM secret_fields sf WHERE sf.secret_id = s.id) AS field_count,
+                   (SELECT GROUP_CONCAT(t.name SEPARATOR ', ')
+                    FROM secret_tags st JOIN tags t ON t.id = st.tag_id
+                    WHERE st.secret_id = s.id) AS tags_list
+            FROM secrets s
+            LEFT JOIN categories c ON c.id = s.category_id
+            WHERE s.view_count > 0
+            ORDER BY s.view_count DESC, s.last_viewed_at DESC
+            LIMIT {$limit}
+        ";
+        $items = $this->db->fetchAll($sql);
+
+        // Добор фолбэком, если открытий мало
+        $need = $limit - count($items);
+        if ($need > 0) {
+            $excludeIds = array_column($items, 'id');
+            $excludeSql = '';
+            if ($excludeIds) {
+                $placeholders = implode(',', array_fill(0, count($excludeIds), '?'));
+                $excludeSql = " AND s.id NOT IN ({$placeholders}) ";
+            }
+            $fallbackSql = "
+                SELECT s.*, c.name AS category_name, c.icon AS category_icon, c.color AS category_color,
+                       (SELECT COUNT(*) FROM secret_fields sf WHERE sf.secret_id = s.id) AS field_count,
+                       (SELECT GROUP_CONCAT(t.name SEPARATOR ', ')
+                        FROM secret_tags st JOIN tags t ON t.id = st.tag_id
+                        WHERE st.secret_id = s.id) AS tags_list
+                FROM secrets s
+                LEFT JOIN categories c ON c.id = s.category_id
+                WHERE 1=1 {$excludeSql}
+                ORDER BY s.is_favorite DESC, s.updated_at DESC
+                LIMIT {$need}
+            ";
+            $fallback = $this->db->fetchAll($fallbackSql, $excludeIds);
+            $items = array_merge($items, $fallback);
+        }
+
+        return $items;
+    }
+
+    /**
+     * Недавно открытые секреты — top N по last_viewed_at.
+     */
+    public function getRecentlyViewed(int $limit): array {
+        $limit = max(1, $limit);
+        $sql = "
+            SELECT s.*, c.name AS category_name, c.icon AS category_icon, c.color AS category_color,
+                   (SELECT COUNT(*) FROM secret_fields sf WHERE sf.secret_id = s.id) AS field_count,
+                   (SELECT GROUP_CONCAT(t.name SEPARATOR ', ')
+                    FROM secret_tags st JOIN tags t ON t.id = st.tag_id
+                    WHERE st.secret_id = s.id) AS tags_list
+            FROM secrets s
+            LEFT JOIN categories c ON c.id = s.category_id
+            WHERE s.last_viewed_at IS NOT NULL
+            ORDER BY s.last_viewed_at DESC
+            LIMIT {$limit}
+        ";
+        return $this->db->fetchAll($sql);
+    }
+
+    /**
      * Переключить избранное
      */
     public function toggleFavorite(int $id): bool {
@@ -246,6 +325,7 @@ class SecretService {
             'favorites' => (int)$this->db->fetchColumn("SELECT COUNT(*) FROM secrets WHERE is_favorite = 1"),
             'fields' => (int)$this->db->fetchColumn("SELECT COUNT(*) FROM secret_fields"),
             'categories_used' => (int)$this->db->fetchColumn("SELECT COUNT(DISTINCT category_id) FROM secrets WHERE category_id IS NOT NULL"),
+            'total_views' => (int)$this->db->fetchColumn("SELECT COALESCE(SUM(view_count), 0) FROM secrets"),
         ];
     }
 

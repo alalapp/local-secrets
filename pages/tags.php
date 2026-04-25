@@ -43,138 +43,149 @@ $pageTitle = 'Теги';
 ob_start();
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0"><i class="fas fa-tags me-2"></i> Теги</h4>
-    <div class="d-flex gap-2">
-        <form method="POST" class="d-inline" onsubmit="return confirm('Удалить все неиспользуемые теги?')">
+<div class="am-page-head">
+    <div class="am-page-head-text">
+        <div class="am-eyebrow">Управление</div>
+        <h1 class="am-h1"><i class="fas fa-tags am-muted"></i> Теги</h1>
+    </div>
+    <div class="am-page-head-actions">
+        <form method="POST" style="display:inline;" onsubmit="return confirm('Удалить все неиспользуемые теги?')">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
             <input type="hidden" name="action" value="cleanup">
-            <button type="submit" class="btn btn-outline-warning btn-sm">
-                <i class="fas fa-broom me-1"></i> Очистить неиспользуемые
+            <button type="submit" class="am-btn am-btn-ghost am-btn-sm">
+                <i class="fas fa-broom"></i> Очистить неиспользуемые
             </button>
         </form>
-        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#tagModal"
-                onclick="resetTagForm()">
-            <i class="fas fa-plus me-1"></i> Добавить
+        <button class="am-btn am-btn-primary am-btn-sm" type="button"
+                data-am-modal-open="tagModal" onclick="resetTagForm()">
+            <i class="fas fa-plus"></i> Добавить
         </button>
     </div>
 </div>
 
 <?php if ($error): ?>
-    <div class="alert alert-danger py-2"><?= htmlspecialchars($error) ?></div>
+    <div class="am-alert am-alert-danger">
+        <i class="fas fa-circle-exclamation"></i>
+        <span><?= htmlspecialchars($error) ?></span>
+    </div>
 <?php endif; ?>
 <?php if ($success): ?>
-    <div class="alert alert-success py-2"><?= htmlspecialchars($success) ?></div>
+    <div class="am-alert am-alert-success">
+        <i class="fas fa-circle-check"></i>
+        <span><?= htmlspecialchars($success) ?></span>
+    </div>
 <?php endif; ?>
 
-<div class="card">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>Название</th>
-                    <th>Секретов</th>
-                    <th style="width:220px">Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($tags)): ?>
-                    <tr><td colspan="3" class="text-center text-muted py-4">Нет тегов</td></tr>
-                <?php else: ?>
-                    <?php foreach ($tags as $tag): ?>
-                        <tr>
-                            <td>
-                                <span class="badge border border-secondary text-secondary">
-                                    <?= htmlspecialchars($tag['name']) ?>
-                                </span>
-                            </td>
-                            <td><?= (int)$tag['secret_count'] ?></td>
-                            <td>
-                                <button class="btn btn-outline-warning btn-sm"
-                                        title="Переименовать"
-                                        onclick="editTag(<?= htmlspecialchars(json_encode($tag), ENT_QUOTES) ?>)">
+<div class="am-table-wrap">
+    <table class="am-table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th class="am-td-num">Секретов</th>
+                <th class="am-td-actions">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($tags)): ?>
+                <tr><td colspan="3" class="am-text-center am-muted" style="padding: 32px;">Нет тегов</td></tr>
+            <?php else: ?>
+                <?php foreach ($tags as $tag): ?>
+                    <tr>
+                        <td>
+                            <span class="am-chip am-chip-tag"><?= htmlspecialchars($tag['name']) ?></span>
+                        </td>
+                        <td class="am-td-num"><?= (int)$tag['secret_count'] ?></td>
+                        <td class="am-td-actions">
+                            <span class="am-btn-group">
+                                <button class="am-icon-btn is-warning" type="button" title="Переименовать"
+                                        onclick='editTag(<?= json_encode($tag, JSON_HEX_APOS|JSON_HEX_QUOT) ?>)'>
                                     <i class="fas fa-pen"></i>
                                 </button>
-                                <button class="btn btn-outline-info btn-sm"
-                                        title="Объединить с другим тегом"
+                                <button class="am-icon-btn is-info" type="button" title="Объединить с другим тегом"
                                         onclick="mergeTag(<?= (int)$tag['id'] ?>, '<?= htmlspecialchars($tag['name'], ENT_QUOTES) ?>')">
                                     <i class="fas fa-code-merge"></i>
                                 </button>
-                                <form method="POST" class="d-inline"
+                                <form method="POST" style="display:inline;"
                                       onsubmit="return confirm('Удалить тег «<?= htmlspecialchars($tag['name'], ENT_QUOTES) ?>»?<?= $tag['secret_count'] > 0 ? '\nОн будет отвязан от ' . (int)$tag['secret_count'] . ' секрет(ов).' : '' ?>')">
                                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?= $tag['id'] ?>">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Удалить">
+                                    <button type="submit" class="am-icon-btn is-danger" title="Удалить">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+                            </span>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
 </div>
 
 <!-- Модалка создания/переименования -->
-<div class="modal fade" id="tagModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                <input type="hidden" name="action" id="tagAction" value="create">
-                <input type="hidden" name="id" id="tagId">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="tagModalTitle">Новый тег</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="am-modal-backdrop am-hidden" id="tagModal" aria-hidden="true">
+    <div class="am-modal" role="dialog" aria-modal="true">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <input type="hidden" name="action" id="tagAction" value="create">
+            <input type="hidden" name="id" id="tagId">
+            <div class="am-modal-head">
+                <h3 class="am-modal-title" id="tagModalTitle">Новый тег</h3>
+                <button type="button" class="am-modal-close" data-am-modal-close>
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="am-modal-body">
+                <div class="am-field">
+                    <label class="am-label">Название</label>
+                    <input type="text" name="name" id="tagName" class="am-input" required maxlength="50">
+                    <div class="am-help">
+                        Если такое имя уже существует — теги будут объединены при переименовании.
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <label class="form-label">Название</label>
-                    <input type="text" name="name" id="tagName" class="form-control" required maxlength="50">
-                    <small class="text-muted">Если такое имя уже существует при переименовании — теги будут объединены.</small>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="submit" class="btn btn-primary">Сохранить</button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div class="am-modal-foot">
+                <button type="button" class="am-btn am-btn-ghost am-btn-sm" data-am-modal-close>Отмена</button>
+                <button type="submit" class="am-btn am-btn-primary am-btn-sm">Сохранить</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <!-- Модалка слияния -->
-<div class="modal fade" id="mergeModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                <input type="hidden" name="action" value="merge">
-                <input type="hidden" name="source_id" id="mergeSourceId">
-                <div class="modal-header">
-                    <h5 class="modal-title">Объединить тег «<span id="mergeSourceName"></span>»</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <label class="form-label">Целевой тег</label>
-                    <select name="target_id" id="mergeTargetId" class="form-select" required>
+<div class="am-modal-backdrop am-hidden" id="mergeModal" aria-hidden="true">
+    <div class="am-modal" role="dialog" aria-modal="true">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <input type="hidden" name="action" value="merge">
+            <input type="hidden" name="source_id" id="mergeSourceId">
+            <div class="am-modal-head">
+                <h3 class="am-modal-title">Объединить тег «<span id="mergeSourceName"></span>»</h3>
+                <button type="button" class="am-modal-close" data-am-modal-close>
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="am-modal-body">
+                <div class="am-field">
+                    <label class="am-label">Целевой тег</label>
+                    <select name="target_id" id="mergeTargetId" class="am-select" required>
                         <?php foreach ($tags as $tag): ?>
                             <option value="<?= $tag['id'] ?>" data-name="<?= htmlspecialchars($tag['name']) ?>">
                                 <?= htmlspecialchars($tag['name']) ?> (<?= (int)$tag['secret_count'] ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <small class="text-muted d-block mt-2">
+                    <div class="am-help">
                         Все секреты исходного тега будут перенесены на целевой, исходный тег будет удалён.
-                    </small>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="submit" class="btn btn-primary">Объединить</button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div class="am-modal-foot">
+                <button type="button" class="am-btn am-btn-ghost am-btn-sm" data-am-modal-close>Отмена</button>
+                <button type="submit" class="am-btn am-btn-primary am-btn-sm">Объединить</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -191,7 +202,7 @@ function editTag(tag) {
     document.getElementById('tagId').value = tag.id;
     document.getElementById('tagName').value = tag.name;
     document.getElementById('tagModalTitle').textContent = 'Переименовать: ' + tag.name;
-    new bootstrap.Modal(document.getElementById('tagModal')).show();
+    openModal(document.getElementById('tagModal'));
 }
 
 function mergeTag(id, name) {
@@ -204,7 +215,7 @@ function mergeTag(id, name) {
     });
     const firstVisible = Array.from(select.options).find(o => !o.hidden);
     if (firstVisible) select.value = firstVisible.value;
-    new bootstrap.Modal(document.getElementById('mergeModal')).show();
+    openModal(document.getElementById('mergeModal'));
 }
 </script>
 

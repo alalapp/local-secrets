@@ -26,7 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     foreach ($entries as $entry) {
         if (empty($entry['service_name'])) continue;
 
-        // Найти category_id по имени
         $catId = null;
         if (!empty($entry['category'])) {
             foreach ($categories as $cat) {
@@ -61,90 +60,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 ob_start();
 ?>
 
-<div class="d-flex align-items-center mb-3">
-    <a href="/local_secrets/index.php" class="btn btn-outline-secondary btn-sm me-3">
-        <i class="fas fa-arrow-left"></i>
-    </a>
-    <h4 class="mb-0"><i class="fas fa-robot me-2 text-info"></i> Умное добавление</h4>
+<div class="am-page-head">
+    <div class="am-page-head-text">
+        <div class="am-flex am-items-center am-gap-3">
+            <a href="/local_secrets/index.php" class="am-back" title="Назад">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <div class="am-eyebrow">Парсинг</div>
+                <h1 class="am-h1"><i class="fas fa-wand-magic-sparkles am-text-info"></i> Умное добавление</h1>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php if ($currentCategory): ?>
-    <div class="alert alert-info py-2 d-flex align-items-center">
-        <i class="fas <?= htmlspecialchars($currentCategory['icon'] ?? 'fa-folder') ?> me-2"
+    <div class="am-alert am-alert-info">
+        <i class="fas <?= htmlspecialchars($currentCategory['icon'] ?? 'fa-folder') ?>"
            style="color: <?= htmlspecialchars($currentCategory['color'] ?? '#888') ?>"></i>
-        <div class="flex-grow-1">
+        <span class="am-flex-1">
             Парсинг в контексте категории: <strong><?= htmlspecialchars($currentCategory['name']) ?></strong>.
             Новые записи по умолчанию будут отнесены к ней.
-        </div>
-        <a href="/local_secrets/pages/smart_add.php" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-times me-1"></i> Сбросить
+        </span>
+        <a href="/local_secrets/pages/smart_add.php" class="am-btn am-btn-ghost am-btn-xs">
+            <i class="fas fa-times"></i> Сбросить
         </a>
     </div>
 <?php endif; ?>
 
 <?php if (!$llmAvailable): ?>
-    <div class="alert alert-warning">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        LM Studio не доступен (<?= htmlspecialchars(LLM_API_URL) ?>). Запустите LM Studio и загрузите модель.
+    <div class="am-alert am-alert-warning">
+        <i class="fas fa-triangle-exclamation"></i>
+        <span>LM Studio не доступен (<?= htmlspecialchars(LLM_API_URL) ?>). Запустите LM Studio и загрузите модель.</span>
     </div>
 <?php endif; ?>
 
 <!-- Шаг 1: Вставить текст -->
-<div id="step1" class="card mb-3">
-    <div class="card-header">
-        <i class="fas fa-paste me-2"></i> Шаг 1: Вставьте неструктурированный текст
+<div id="step1" class="am-card am-card-flush am-mb-3">
+    <div class="am-card-head">
+        <span><i class="fas fa-paste"></i> Шаг 1: вставьте неструктурированный текст</span>
     </div>
-    <div class="card-body">
-        <textarea id="rawText" class="form-control" rows="12"
-                  placeholder="Вставьте сюда текст с логинами, паролями, API-ключами...&#10;&#10;Пример:&#10;OpenAI API Key: sk-proj-abc123...&#10;Login: admin&#10;Password: secret123"></textarea>
-        <div class="mt-2 d-flex justify-content-between align-items-center">
-            <small class="text-muted">LLM или быстрый парсинг разберут текст на сервисы и поля</small>
-            <div class="d-flex gap-2">
-                <button id="fallbackBtn" class="btn btn-outline-warning" title="Мгновенный парсинг по паттернам, без LLM">
-                    <i class="fas fa-bolt me-1"></i> Быстрый парсинг
+    <div class="am-card-body">
+        <textarea id="rawText" class="am-textarea am-input-mono" rows="12"
+                  placeholder="Вставьте сюда текст с логинами, паролями, API-ключами…&#10;&#10;Пример:&#10;OpenAI API Key: sk-proj-abc123…&#10;Login: admin&#10;Password: secret123"></textarea>
+        <div class="am-flex am-justify-between am-items-center am-mt-3 am-flex-wrap am-gap-2">
+            <span class="am-text-sm am-muted">LLM или быстрый парсинг разберут текст на сервисы и поля</span>
+            <div class="am-flex am-gap-2">
+                <button id="fallbackBtn" class="am-btn am-btn-ghost am-btn-sm" type="button"
+                        title="Мгновенный парсинг по паттернам, без LLM">
+                    <i class="fas fa-bolt"></i> Быстрый парсинг
                 </button>
-                <button id="analyzeBtn" class="btn btn-info" <?= !$llmAvailable ? 'disabled' : '' ?>
+                <button id="analyzeBtn" class="am-btn am-btn-primary am-btn-sm" type="button"
+                        <?= !$llmAvailable ? 'disabled' : '' ?>
                         title="Парсинг через LLM (медленнее, но точнее)">
-                    <i class="fas fa-wand-magic-sparkles me-1"></i> LLM-анализ
+                    <i class="fas fa-wand-magic-sparkles"></i> LLM-анализ
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Шаг 2: Результат — скрыт до анализа -->
-<div id="step2" style="display:none;">
-    <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="fas fa-check-double me-2"></i> Шаг 2: Проверьте результат</span>
-            <span class="badge bg-info" id="entriesCount"></span>
+<!-- Шаг 2: Результат -->
+<div id="step2" class="am-hidden">
+    <div class="am-card am-card-flush am-mb-3">
+        <div class="am-card-head">
+            <span><i class="fas fa-check-double"></i> Шаг 2: проверьте результат</span>
+            <span class="am-chip blue" id="entriesCount"></span>
         </div>
-        <div class="card-body" id="entriesPreview">
-            <!-- Заполняется через JS -->
-        </div>
+        <div class="am-card-body" id="entriesPreview"></div>
     </div>
 
     <form method="POST">
         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
         <input type="hidden" name="action" value="save_entries">
         <input type="hidden" name="entries_json" id="entriesJson">
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-success" id="saveAllBtn">
-                <i class="fas fa-save me-1"></i> Сохранить все
+        <div class="am-flex am-gap-2">
+            <button type="submit" class="am-btn am-btn-primary" id="saveAllBtn">
+                <i class="fas fa-save"></i> Сохранить все
             </button>
-            <button type="button" class="btn btn-secondary" id="backBtn">
-                <i class="fas fa-arrow-left me-1"></i> Назад к тексту
+            <button type="button" class="am-btn am-btn-ghost" id="backBtn">
+                <i class="fas fa-arrow-left"></i> Назад к тексту
             </button>
         </div>
     </form>
 </div>
 
 <!-- Спиннер -->
-<div id="spinner" style="display:none;" class="text-center py-5">
-    <div class="spinner-border text-info" role="status" style="width:3rem;height:3rem;">
-        <span class="visually-hidden">Анализ...</span>
-    </div>
-    <p class="text-muted mt-3">LLM анализирует текст...</p>
+<div id="spinner" class="am-loading am-hidden">
+    <span class="am-spinner am-spinner-lg"></span>
+    <p class="am-mb-0">LLM анализирует текст…</p>
 </div>
 
 <script>
@@ -153,142 +157,142 @@ const CURRENT_CATEGORY_ID = <?= (int)$currentCategoryId ?>;
 let parsedEntries = [];
 
 document.addEventListener('DOMContentLoaded', function() {
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
+    const spinner = document.getElementById('spinner');
+    const spinnerText = spinner.querySelector('p');
+    const rawText = document.getElementById('rawText');
 
-// Общая функция парсинга
-function runParse(url, spinnerText) {
-    const text = $('#rawText').val().trim();
-    if (!text) return;
+    function show(el)  { el.classList.remove('am-hidden'); }
+    function hide(el)  { el.classList.add('am-hidden'); }
 
-    $('#step1').hide();
-    $('#step2').hide();
-    $('#spinner').show();
-    $('#spinner p').text(spinnerText);
+    function runParse(url, label) {
+        const text = rawText.value.trim();
+        if (!text) return;
 
-    $.ajax({
-        url: url,
-        method: 'POST',
-        contentType: 'application/json',
-        headers: { 'X-CSRF-TOKEN': CSRF_TOKEN },
-        data: JSON.stringify({ text: text, category_id: CURRENT_CATEGORY_ID || null }),
-        timeout: 200000, // 200 сек для LLM
-        success: function(resp) {
-            $('#spinner').hide();
-            if (resp.success && resp.data.entries && resp.data.entries.length > 0) {
+        hide(step1); hide(step2); show(spinner);
+        spinnerText.textContent = label;
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 200000);
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.CSRF_TOKEN || '' },
+            body: JSON.stringify({ text: text, category_id: CURRENT_CATEGORY_ID || null }),
+            signal: controller.signal
+        })
+        .then(r => r.json())
+        .then(resp => {
+            clearTimeout(timer);
+            hide(spinner);
+            if (resp.success && resp.data && resp.data.entries && resp.data.entries.length > 0) {
                 parsedEntries = resp.data.entries;
                 renderEntries(parsedEntries);
-                $('#step2').show();
+                show(step2);
             } else {
-                // LLM не справился — автоматически пробуем fallback
                 if (url.includes('llm_parse')) {
-                    showToast('LLM не справился, пробую быстрый парсинг...', 'warning');
-                    runParse('/local_secrets/api/fallback_parse.php', 'Быстрый парсинг...');
+                    showToast('LLM не справился, пробую быстрый парсинг…', 'warning');
+                    runParse('/local_secrets/api/fallback_parse.php', 'Быстрый парсинг…');
                 } else {
                     showToast(resp.error || 'Не удалось распознать данные', 'warning');
-                    $('#step1').show();
+                    show(step1);
                 }
             }
-        },
-        error: function(xhr) {
-            $('#spinner').hide();
-            // LLM ошибка — автоматически fallback
+        })
+        .catch(err => {
+            clearTimeout(timer);
+            hide(spinner);
             if (url.includes('llm_parse')) {
-                showToast('LLM ошибка, переключаюсь на быстрый парсинг...', 'warning');
-                runParse('/local_secrets/api/fallback_parse.php', 'Быстрый парсинг...');
+                showToast('LLM ошибка, переключаюсь на быстрый парсинг…', 'warning');
+                runParse('/local_secrets/api/fallback_parse.php', 'Быстрый парсинг…');
             } else {
-                $('#step1').show();
-                showToast('Ошибка: ' + (xhr.responseJSON?.error || xhr.statusText), 'danger');
+                show(step1);
+                showToast('Ошибка: ' + (err.message || 'сеть'), 'danger');
             }
-        }
+        });
+    }
+
+    document.getElementById('analyzeBtn').addEventListener('click', () =>
+        runParse('/local_secrets/api/llm_parse.php', 'LLM анализирует текст…')
+    );
+    document.getElementById('fallbackBtn').addEventListener('click', () =>
+        runParse('/local_secrets/api/fallback_parse.php', 'Быстрый парсинг…')
+    );
+    document.getElementById('backBtn').addEventListener('click', function () {
+        hide(step2); show(step1);
     });
-}
 
-// LLM-анализ
-$('#analyzeBtn').on('click', function() {
-    runParse('/local_secrets/api/llm_parse.php', 'LLM анализирует текст...');
+    document.getElementById('entriesPreview').addEventListener('input', syncEntriesJson);
+    document.getElementById('entriesPreview').addEventListener('change', syncEntriesJson);
+
+    document.querySelector('form[method="POST"][action=""], form[method="POST"]:not([action])')
+        ?.addEventListener('submit', syncEntriesJson);
 });
-
-// Быстрый парсинг (без LLM)
-$('#fallbackBtn').on('click', function() {
-    runParse('/local_secrets/api/fallback_parse.php', 'Быстрый парсинг...');
-});
-
-$('#backBtn').on('click', function() {
-    $('#step2').hide();
-    $('#step1').show();
-});
-
-// Обработчик редактирования — должен регистрироваться ПОСЛЕ загрузки jQuery
-$(document).on('input change', '.entry-name, .entry-tags, .entry-category', syncEntriesJson);
-
-// Подстраховка: синк перед отправкой формы
-$('form').on('submit', function() {
-    if (typeof syncEntriesJson === 'function') syncEntriesJson();
-});
-
-}); // end DOMContentLoaded
 
 function renderEntries(entries) {
-    $('#entriesCount').text(entries.length + ' сервис(ов)');
+    const countEl = document.getElementById('entriesCount');
+    countEl.textContent = entries.length + ' сервис(ов)';
     let html = '';
     entries.forEach((entry, idx) => {
         const tagsStr = (entry.tags || []).join(', ');
-        html += `<div class="border rounded p-3 mb-3" data-idx="${idx}">
-            <div class="row g-2 mb-2">
-                <div class="col-md-8">
-                    <label class="form-label small text-muted mb-1">Название сервиса</label>
-                    <input type="text" class="form-control entry-name" data-idx="${idx}"
+        html += `<div class="am-card-soft am-mb-3" data-idx="${idx}">
+            <div class="am-field-row cols-3 am-mb-2" style="grid-template-columns: 2fr 1fr;">
+                <div class="am-field am-mb-0">
+                    <label class="am-label">Название сервиса</label>
+                    <input type="text" class="am-input am-input-sm entry-name" data-idx="${idx}"
                            value="${escapeAttr(entry.service_name)}" placeholder="Название сервиса">
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label small text-muted mb-1">Категория</label>
-                    <select class="form-select entry-category" data-idx="${idx}">
+                <div class="am-field am-mb-0">
+                    <label class="am-label">Категория</label>
+                    <select class="am-select am-input-sm entry-category" data-idx="${idx}">
                         <option value="">— Без категории —</option>
                         ${buildCategoryOptions(entry.category)}
                     </select>
                 </div>
             </div>`;
         if (entry.description) {
-            html += `<p class="text-muted small mb-2">${escapeHtml(entry.description)}</p>`;
+            html += `<p class="am-text-sm am-muted am-mb-2">${escapeHtml(entry.description)}</p>`;
         }
-        html += '<table class="table table-sm mb-2">';
+        html += '<div class="am-table-wrap am-mb-2"><table class="am-table"><tbody>';
         (entry.fields || []).forEach(f => {
             const masked = f.type === 'password' || f.type === 'token'
-                ? '********' : escapeHtml(f.value);
+                ? '••••••••' : escapeHtml(f.value);
             html += `<tr>
-                <td class="fw-semibold" style="width:200px">${escapeHtml(f.name)}</td>
-                <td class="text-break">${masked}</td>
-                <td style="width:80px"><span class="badge bg-dark">${f.type}</span></td>
+                <td class="am-fw-500" style="width:200px">${escapeHtml(f.name)}</td>
+                <td class="am-mono am-text-sm" style="word-break:break-all;">${masked}</td>
+                <td style="width:90px"><span class="am-chip am-chip-sq">${escapeHtml(f.type)}</span></td>
             </tr>`;
         });
-        html += '</table>';
-        html += `<div>
-            <label class="form-label small text-muted mb-1">Теги <span class="text-muted">(через запятую)</span></label>
-            <input type="text" class="form-control form-control-sm entry-tags" data-idx="${idx}"
-                   value="${escapeAttr(tagsStr)}" placeholder="api, production, personal...">
+        html += '</tbody></table></div>';
+        html += `<div class="am-field am-mb-0">
+            <label class="am-label">Теги <span class="am-muted">(через запятую)</span></label>
+            <input type="text" class="am-input am-input-sm entry-tags" data-idx="${idx}"
+                   value="${escapeAttr(tagsStr)}" placeholder="api, production, personal…">
         </div>`;
         html += '</div>';
     });
-    $('#entriesPreview').html(html);
+    document.getElementById('entriesPreview').innerHTML = html;
     syncEntriesJson();
 }
 
 function syncEntriesJson() {
-    $('.entry-name').each(function() {
-        const i = parseInt($(this).data('idx'), 10);
-        if (parsedEntries[i]) parsedEntries[i].service_name = $(this).val().trim();
+    document.querySelectorAll('.entry-name').forEach(el => {
+        const i = parseInt(el.dataset.idx, 10);
+        if (parsedEntries[i]) parsedEntries[i].service_name = el.value.trim();
     });
-    $('.entry-category').each(function() {
-        const i = parseInt($(this).data('idx'), 10);
-        if (parsedEntries[i]) parsedEntries[i].category = $(this).val();
+    document.querySelectorAll('.entry-category').forEach(el => {
+        const i = parseInt(el.dataset.idx, 10);
+        if (parsedEntries[i]) parsedEntries[i].category = el.value;
     });
-    $('.entry-tags').each(function() {
-        const i = parseInt($(this).data('idx'), 10);
+    document.querySelectorAll('.entry-tags').forEach(el => {
+        const i = parseInt(el.dataset.idx, 10);
         if (parsedEntries[i]) {
-            const raw = $(this).val().trim();
+            const raw = el.value.trim();
             parsedEntries[i].tags = raw === '' ? [] : raw.split(',').map(s => s.trim()).filter(s => s !== '');
         }
     });
-    $('#entriesJson').val(JSON.stringify(parsedEntries));
+    document.getElementById('entriesJson').value = JSON.stringify(parsedEntries);
 }
 
 function buildCategoryOptions(current) {
@@ -300,23 +304,10 @@ function buildCategoryOptions(current) {
         if (selected) found = true;
         html += `<option value="${escapeAttr(name)}"${selected ? ' selected' : ''}>${escapeHtml(name)}</option>`;
     });
-    // Если LLM вернул категорию, которой нет в справочнике — сохраняем её как отдельный вариант
     if (!found && current) {
         html += `<option value="${escapeAttr(current)}" selected>${escapeHtml(current)} (новая)</option>`;
     }
     return html;
-}
-
-function escapeAttr(s) {
-    if (!s) return '';
-    return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 </script>
 

@@ -37,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         'tags'         => [],
     ];
 
-    // Собрать поля
     $fieldNames = $_POST['field_name'] ?? [];
     $fieldValues = $_POST['field_value'] ?? [];
     $fieldTypes = $_POST['field_type'] ?? [];
@@ -53,7 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         }
     }
 
-    // Собрать теги
     $tagsStr = trim($_POST['tags'] ?? '');
     if ($tagsStr !== '') {
         $data['tags'] = array_map('trim', explode(',', $tagsStr));
@@ -82,93 +80,99 @@ $popularTags = $tagService->getPopular();
 ob_start();
 ?>
 
-<div class="d-flex align-items-center mb-3">
-    <a href="<?= $isEdit ? "/local_secrets/pages/secret_view.php?id={$id}" : '/local_secrets/index.php' ?>"
-       class="btn btn-outline-secondary btn-sm me-3">
-        <i class="fas fa-arrow-left"></i>
-    </a>
-    <h4 class="mb-0"><?= htmlspecialchars($pageTitle) ?></h4>
+<div class="am-page-head">
+    <div class="am-page-head-text">
+        <div class="am-flex am-items-center am-gap-3">
+            <a href="<?= $isEdit ? "/local_secrets/pages/secret_view.php?id={$id}" : '/local_secrets/index.php' ?>"
+               class="am-back" title="Назад">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <div class="am-eyebrow"><?= $isEdit ? 'Редактирование' : 'Новая запись' ?></div>
+                <h1 class="am-h1"><?= htmlspecialchars($pageTitle) ?></h1>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php if ($error): ?>
-    <div class="alert alert-danger py-2"><?= htmlspecialchars($error) ?></div>
+    <div class="am-alert am-alert-danger">
+        <i class="fas fa-circle-exclamation"></i>
+        <span><?= htmlspecialchars($error) ?></span>
+    </div>
 <?php endif; ?>
 
 <form method="POST" id="secretForm">
     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 
-    <div class="card mb-3">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Название сервиса <span class="text-danger">*</span></label>
-                    <input type="text" name="service_name" class="form-control"
-                           value="<?= htmlspecialchars($secret['service_name'] ?? $_POST['service_name'] ?? '') ?>"
-                           placeholder="OpenAI, Firebase, Sber..." required>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Категория</label>
-                    <select name="category_id" class="form-select">
-                        <option value="">— Без категории —</option>
-                        <?php foreach ($categories as $cat): ?>
-                            <option value="<?= $cat['id'] ?>"
-                                <?= ($secret['category_id'] ?? $_POST['category_id'] ?? $prefillCatId ?? '') == $cat['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($cat['name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <div class="form-check">
-                        <input type="checkbox" name="is_favorite" class="form-check-input" id="isFavorite"
-                               <?= ($secret['is_favorite'] ?? false) ? 'checked' : '' ?>>
-                        <label class="form-check-label" for="isFavorite">
-                            <i class="fas fa-star text-warning"></i> Избранное
-                        </label>
-                    </div>
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Описание / Заметки</label>
-                    <textarea name="description" class="form-control" rows="2"
-                              placeholder="Комментарии, инструкции..."><?= htmlspecialchars($secret['description'] ?? $_POST['description'] ?? '') ?></textarea>
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Теги <span class="text-muted small">(через запятую)</span></label>
-                    <input type="text" name="tags" class="form-control"
-                           value="<?= htmlspecialchars(
-                               $isEdit && isset($secret['tags'])
-                                   ? implode(', ', array_column($secret['tags'], 'name'))
-                                   : ($_POST['tags'] ?? '')
-                           ) ?>"
-                           placeholder="api, production, personal...">
-                    <?php if ($popularTags): ?>
-                        <div class="mt-1">
-                            <?php foreach ($popularTags as $tag): ?>
-                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1 me-1 mt-1 btn-add-tag"
-                                        data-tag="<?= htmlspecialchars($tag['name']) ?>">
-                                    <?= htmlspecialchars($tag['name']) ?>
-                                </button>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
+    <div class="am-card am-mb-3">
+        <div class="am-field-row cols-3">
+            <div class="am-field" style="grid-column: span 2;">
+                <label class="am-label">Название сервиса <span class="am-req">*</span></label>
+                <input type="text" name="service_name" class="am-input"
+                       value="<?= htmlspecialchars($secret['service_name'] ?? $_POST['service_name'] ?? '') ?>"
+                       placeholder="OpenAI, Firebase, Sber..." required>
             </div>
+            <div class="am-field">
+                <label class="am-label">Категория</label>
+                <select name="category_id" class="am-select">
+                    <option value="">— Без категории —</option>
+                    <?php foreach ($categories as $cat): ?>
+                        <option value="<?= $cat['id'] ?>"
+                            <?= ($secret['category_id'] ?? $_POST['category_id'] ?? $prefillCatId ?? '') == $cat['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($cat['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+
+        <label class="am-check am-mb-3">
+            <input type="checkbox" name="is_favorite" id="isFavorite"
+                   <?= ($secret['is_favorite'] ?? false) ? 'checked' : '' ?>>
+            <i class="fas fa-star am-text-warning"></i> В избранном
+        </label>
+
+        <div class="am-field">
+            <label class="am-label">Описание / заметки</label>
+            <textarea name="description" class="am-textarea" rows="2"
+                      placeholder="Комментарии, инструкции…"><?= htmlspecialchars($secret['description'] ?? $_POST['description'] ?? '') ?></textarea>
+        </div>
+
+        <div class="am-field am-mb-0">
+            <label class="am-label">Теги <span class="am-muted">(через запятую)</span></label>
+            <input type="text" name="tags" class="am-input"
+                   value="<?= htmlspecialchars(
+                       $isEdit && isset($secret['tags'])
+                           ? implode(', ', array_column($secret['tags'], 'name'))
+                           : ($_POST['tags'] ?? '')
+                   ) ?>"
+                   placeholder="api, production, personal…">
+            <?php if ($popularTags): ?>
+                <div class="am-flex am-flex-wrap am-gap-1 am-mt-2">
+                    <?php foreach ($popularTags as $tag): ?>
+                        <button type="button" class="am-chip am-chip-tag btn-add-tag"
+                                data-tag="<?= htmlspecialchars($tag['name']) ?>">
+                            <?= htmlspecialchars($tag['name']) ?>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 
     <!-- Поля (ключ-значение) -->
-    <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="fas fa-key me-2"></i> Поля</span>
-            <button type="button" class="btn btn-success btn-sm" id="addFieldBtn">
-                <i class="fas fa-plus me-1"></i> Добавить поле
+    <div class="am-card am-card-flush am-mb-3">
+        <div class="am-card-head">
+            <span><i class="fas fa-key"></i> Поля</span>
+            <button type="button" class="am-btn am-btn-ghost am-btn-sm" id="addFieldBtn">
+                <i class="fas fa-plus"></i> Добавить поле
             </button>
         </div>
-        <div class="card-body" id="fieldsContainer">
+        <div class="am-card-body" id="fieldsContainer">
             <?php
             $fields = $secret['fields'] ?? $_POST['field_name'] ?? [];
             if (empty($fields)) {
-                // Пустые поля по умолчанию для нового секрета
                 $fields = [
                     ['field_name' => 'login', 'field_value' => '', 'field_type' => 'text'],
                     ['field_name' => 'password', 'field_value' => '', 'field_type' => 'password'],
@@ -179,24 +183,25 @@ ob_start();
                 $fvalue = $field['field_value'] ?? ($field['value'] ?? '');
                 $ftype = $field['field_type'] ?? ($field['type'] ?? 'text');
             ?>
-                <div class="row g-2 mb-2 field-row">
-                    <div class="col-md-3">
-                        <input type="text" name="field_name[]" class="form-control form-control-sm"
+                <div class="field-row am-field-row am-mb-2"
+                     style="grid-template-columns: 1fr 2fr 140px 36px; align-items: end;">
+                    <div class="am-field am-mb-0">
+                        <input type="text" name="field_name[]" class="am-input am-input-sm"
                                value="<?= htmlspecialchars($fname) ?>" placeholder="Название поля">
                     </div>
-                    <div class="col-md-6">
-                        <div class="input-group input-group-sm">
+                    <div class="am-field am-mb-0">
+                        <div class="am-input-group">
                             <input type="<?= $ftype === 'password' ? 'password' : 'text' ?>"
-                                   name="field_value[]" class="form-control field-value-input"
+                                   name="field_value[]" class="am-input am-input-sm field-value-input"
                                    value="<?= htmlspecialchars($fvalue) ?>" placeholder="Значение">
-                            <button type="button" class="btn btn-outline-secondary toggle-visibility"
+                            <button type="button" class="am-input-group-addon toggle-visibility"
                                     title="Показать/скрыть">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <select name="field_type[]" class="form-select form-select-sm">
+                    <div class="am-field am-mb-0">
+                        <select name="field_type[]" class="am-select am-input-sm">
                             <option value="text" <?= $ftype === 'text' ? 'selected' : '' ?>>Текст</option>
                             <option value="password" <?= $ftype === 'password' ? 'selected' : '' ?>>Пароль</option>
                             <option value="url" <?= $ftype === 'url' ? 'selected' : '' ?>>URL</option>
@@ -205,41 +210,40 @@ ob_start();
                             <option value="note" <?= $ftype === 'note' ? 'selected' : '' ?>>Заметка</option>
                         </select>
                     </div>
-                    <div class="col-md-1">
-                        <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-field">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
+                    <button type="button" class="am-icon-btn is-danger remove-field" title="Удалить">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             <?php endforeach; ?>
         </div>
     </div>
 
-    <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save me-1"></i> <?= $isEdit ? 'Сохранить' : 'Создать' ?>
+    <div class="am-flex am-gap-2">
+        <button type="submit" class="am-btn am-btn-primary">
+            <i class="fas fa-save"></i> <?= $isEdit ? 'Сохранить' : 'Создать' ?>
         </button>
         <a href="<?= $isEdit ? "/local_secrets/pages/secret_view.php?id={$id}" : '/local_secrets/index.php' ?>"
-           class="btn btn-secondary">Отмена</a>
+           class="am-btn am-btn-ghost">Отмена</a>
     </div>
 </form>
 
 <!-- Шаблон строки поля -->
 <template id="fieldRowTemplate">
-    <div class="row g-2 mb-2 field-row">
-        <div class="col-md-3">
-            <input type="text" name="field_name[]" class="form-control form-control-sm" placeholder="Название поля">
+    <div class="field-row am-field-row am-mb-2"
+         style="grid-template-columns: 1fr 2fr 140px 36px; align-items: end;">
+        <div class="am-field am-mb-0">
+            <input type="text" name="field_name[]" class="am-input am-input-sm" placeholder="Название поля">
         </div>
-        <div class="col-md-6">
-            <div class="input-group input-group-sm">
-                <input type="text" name="field_value[]" class="form-control field-value-input" placeholder="Значение">
-                <button type="button" class="btn btn-outline-secondary toggle-visibility" title="Показать/скрыть">
+        <div class="am-field am-mb-0">
+            <div class="am-input-group">
+                <input type="text" name="field_value[]" class="am-input am-input-sm field-value-input" placeholder="Значение">
+                <button type="button" class="am-input-group-addon toggle-visibility" title="Показать/скрыть">
                     <i class="fas fa-eye"></i>
                 </button>
             </div>
         </div>
-        <div class="col-md-2">
-            <select name="field_type[]" class="form-select form-select-sm">
+        <div class="am-field am-mb-0">
+            <select name="field_type[]" class="am-select am-input-sm">
                 <option value="text">Текст</option>
                 <option value="password">Пароль</option>
                 <option value="url">URL</option>
@@ -248,11 +252,9 @@ ob_start();
                 <option value="note">Заметка</option>
             </select>
         </div>
-        <div class="col-md-1">
-            <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-field">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
+        <button type="button" class="am-icon-btn is-danger remove-field" title="Удалить">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
 </template>
 
@@ -261,11 +263,50 @@ document.addEventListener('DOMContentLoaded', function() {
     const isEdit = <?= $isEdit ? 'true' : 'false' ?>;
     const prefillCatId = <?= (int)$prefillCatId ?>;
     const categorySelect = document.querySelector('select[name="category_id"]');
+    const fieldsContainer = document.getElementById('fieldsContainer');
+
+    function buildRow(name, type, placeholder) {
+        const row = document.createElement('div');
+        row.className = 'field-row am-field-row am-mb-2';
+        row.style.gridTemplateColumns = '1fr 2fr 140px 36px';
+        row.style.alignItems = 'end';
+        const inputType = type === 'password' ? 'password' : 'text';
+        row.innerHTML = `
+            <div class="am-field am-mb-0">
+                <input type="text" name="field_name[]" class="am-input am-input-sm"
+                       value="${escapeAttr(name)}" placeholder="Название поля">
+            </div>
+            <div class="am-field am-mb-0">
+                <div class="am-input-group">
+                    <input type="${inputType}" name="field_value[]"
+                           class="am-input am-input-sm field-value-input"
+                           placeholder="${escapeAttr(placeholder || '')}">
+                    <button type="button" class="am-input-group-addon toggle-visibility" title="Показать/скрыть">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="am-field am-mb-0">
+                <select name="field_type[]" class="am-select am-input-sm">
+                    <option value="text" ${type==='text'?'selected':''}>Текст</option>
+                    <option value="password" ${type==='password'?'selected':''}>Пароль</option>
+                    <option value="url" ${type==='url'?'selected':''}>URL</option>
+                    <option value="email" ${type==='email'?'selected':''}>Email</option>
+                    <option value="token" ${type==='token'?'selected':''}>Токен</option>
+                    <option value="note" ${type==='note'?'selected':''}>Заметка</option>
+                </select>
+            </div>
+            <button type="button" class="am-icon-btn is-danger remove-field" title="Удалить">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        return row;
+    }
 
     function loadCategoryTemplate(catId, skipConfirm) {
         if (!catId) return;
 
-        const existingValues = document.querySelectorAll('#fieldsContainer input[name="field_value[]"]');
+        const existingValues = fieldsContainer.querySelectorAll('input[name="field_value[]"]');
         let hasValues = false;
         existingValues.forEach(input => {
             if (input.value.trim()) hasValues = true;
@@ -275,47 +316,19 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        $.get('/local_secrets/api/category_templates.php', { category_id: catId }, function(resp) {
-            if (resp.success && resp.data.length > 0) {
-                $('#fieldsContainer').empty();
-                resp.data.forEach(function(tpl) {
-                    const inputType = tpl.field_type === 'password' ? 'password' : 'text';
-                    const row = `<div class="row g-2 mb-2 field-row">
-                        <div class="col-md-3">
-                            <input type="text" name="field_name[]" class="form-control form-control-sm"
-                                   value="${escapeAttr(tpl.field_name)}" placeholder="Название поля">
-                        </div>
-                        <div class="col-md-6">
-                            <div class="input-group input-group-sm">
-                                <input type="${inputType}" name="field_value[]"
-                                       class="form-control field-value-input"
-                                       placeholder="${escapeAttr(tpl.placeholder || '')}">
-                                <button type="button" class="btn btn-outline-secondary toggle-visibility" title="Показать/скрыть">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <select name="field_type[]" class="form-select form-select-sm">
-                                <option value="text" ${tpl.field_type==='text'?'selected':''}>Текст</option>
-                                <option value="password" ${tpl.field_type==='password'?'selected':''}>Пароль</option>
-                                <option value="url" ${tpl.field_type==='url'?'selected':''}>URL</option>
-                                <option value="email" ${tpl.field_type==='email'?'selected':''}>Email</option>
-                                <option value="token" ${tpl.field_type==='token'?'selected':''}>Токен</option>
-                                <option value="note" ${tpl.field_type==='note'?'selected':''}>Заметка</option>
-                            </select>
-                        </div>
-                        <div class="col-md-1">
-                            <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-field">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>`;
-                    $('#fieldsContainer').append(row);
-                });
-                if (typeof showToast === 'function') showToast('Загружен шаблон полей для категории', 'info');
-            }
-        });
+        fetch('/local_secrets/api/category_templates.php?category_id=' + encodeURIComponent(catId))
+            .then(r => r.json())
+            .then(resp => {
+                if (resp.success && resp.data.length > 0) {
+                    fieldsContainer.innerHTML = '';
+                    resp.data.forEach(tpl => {
+                        fieldsContainer.appendChild(buildRow(tpl.field_name, tpl.field_type, tpl.placeholder || ''));
+                    });
+                    if (typeof showToast === 'function') {
+                        showToast('Загружен шаблон полей для категории', 'info');
+                    }
+                }
+            });
     }
 
     if (!isEdit && prefillCatId) {
@@ -325,66 +338,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!isEdit && categorySelect) {
         categorySelect.addEventListener('change', function() {
             const catId = this.value;
-            if (!catId) return;
-
-            // Проверить, есть ли уже заполненные значения
-            const existingValues = document.querySelectorAll('#fieldsContainer input[name="field_value[]"]');
-            let hasValues = false;
-            existingValues.forEach(input => {
-                if (input.value.trim()) hasValues = true;
-            });
-
-            if (hasValues && !confirm('Заменить текущие поля шаблоном категории?')) {
-                return;
-            }
-
-            $.get('/local_secrets/api/category_templates.php', { category_id: catId }, function(resp) {
-                if (resp.success && resp.data.length > 0) {
-                    $('#fieldsContainer').empty();
-                    resp.data.forEach(function(tpl) {
-                        const inputType = tpl.field_type === 'password' ? 'password' : 'text';
-                        const row = `<div class="row g-2 mb-2 field-row">
-                            <div class="col-md-3">
-                                <input type="text" name="field_name[]" class="form-control form-control-sm"
-                                       value="${escapeAttr(tpl.field_name)}" placeholder="Название поля">
-                            </div>
-                            <div class="col-md-6">
-                                <div class="input-group input-group-sm">
-                                    <input type="${inputType}" name="field_value[]"
-                                           class="form-control field-value-input"
-                                           placeholder="${escapeAttr(tpl.placeholder || '')}">
-                                    <button type="button" class="btn btn-outline-secondary toggle-visibility" title="Показать/скрыть">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <select name="field_type[]" class="form-select form-select-sm">
-                                    <option value="text" ${tpl.field_type==='text'?'selected':''}>Текст</option>
-                                    <option value="password" ${tpl.field_type==='password'?'selected':''}>Пароль</option>
-                                    <option value="url" ${tpl.field_type==='url'?'selected':''}>URL</option>
-                                    <option value="email" ${tpl.field_type==='email'?'selected':''}>Email</option>
-                                    <option value="token" ${tpl.field_type==='token'?'selected':''}>Токен</option>
-                                    <option value="note" ${tpl.field_type==='note'?'selected':''}>Заметка</option>
-                                </select>
-                            </div>
-                            <div class="col-md-1">
-                                <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-field">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>`;
-                        $('#fieldsContainer').append(row);
-                    });
-                    showToast('Загружен шаблон полей для категории', 'info');
-                }
-            });
+            if (catId) loadCategoryTemplate(catId, false);
         });
-    }
-
-    function escapeAttr(s) {
-        if (!s) return '';
-        return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;');
     }
 });
 </script>
